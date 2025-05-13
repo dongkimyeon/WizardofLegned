@@ -28,6 +28,12 @@
     <Filter Include="Object\Monster">
       <UniqueIdentifier>{2b900adf-2178-4b5e-93f7-4ac8fac617b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Object\Monster\Archer">
+      <UniqueIdentifier>{e9745e87-6b76-47d0-936c-3da9d3e15f2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Object\Monster\Wizard">
+      <UniqueIdentifier>{9231d814-482d-4566-9db2-8d06c07027f5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Resource.h">
@@ -69,14 +75,17 @@
     <ClInclude Include="Player.h">
       <Filter>Object</Filter>
     </ClInclude>
-    <ClInclude Include="Archer.h">
-      <Filter>Object\Monster</Filter>
-    </ClInclude>
     <ClInclude Include="SwordMan.h">
       <Filter>Object\Monster</Filter>
     </ClInclude>
+    <ClInclude Include="Archer.h">
+      <Filter>Object\Monster\Archer</Filter>
+    </ClInclude>
+    <ClInclude Include="Arrow.h">
+      <Filter>Object\Monster\Archer</Filter>
+    </ClInclude>
     <ClInclude Include="Wizard.h">
-      <Filter>Object\Monster</Filter>
+      <Filter>Object\Monster\Wizard</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -119,14 +128,17 @@
     <ClCompile Include="Player.cpp">
       <Filter>Object</Filter>
     </ClCompile>
-    <ClCompile Include="Archer.cpp">
-      <Filter>Object\Monster</Filter>
-    </ClCompile>
     <ClCompile Include="SwordMan.cpp">
       <Filter>Object\Monster</Filter>
     </ClCompile>
+    <ClCompile Include="Archer.cpp">
+      <Filter>Object\Monster\Archer</Filter>
+    </ClCompile>
+    <ClCompile Include="Arrow.cpp">
+      <Filter>Object\Monster\Archer</Filter>
+    </ClCompile>
     <ClCompile Include="Wizard.cpp">
-      <Filter>Object\Monster</Filter>
+      <Filter>Object\Monster\Wizard</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

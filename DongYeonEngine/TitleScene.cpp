@@ -15,8 +15,7 @@ TitleScene::~TitleScene()
 
 void TitleScene::Initialize()
 {
-    mBackGroundImage.Load(L"resources/Maintitle.png"); // ���� �̹��� ��η� ����
-   
+    mBackGroundImage.Load(L"resources/Maintitle.png"); 
 
     
     mLogoImage.Load(L"resources/TitileLogo.png"); 
@@ -27,7 +26,6 @@ void TitleScene::Update()
 {
     Scene::Update();
 
-    // �����̽� Ű �Է� �� PlayScene���� ��ȯ
     if (GetAsyncKeyState(VK_SPACE) & 0x8000)
     {
         SceneManager::LoadScene(L"Stage1");
@@ -49,12 +47,10 @@ void TitleScene::Render(HDC hdc)
 
     if (!mLogoImage.IsNull())
     {
-        int logoWidth = mLogoImage.GetWidth();
-        int logoHeight = mLogoImage.GetHeight();
-        int logoX = (width - logoWidth) / 2; 
-        int logoY = (height - logoHeight) / 2; 
-        mLogoImage.Draw(hdc, logoX, logoY, logoWidth, logoHeight);
+        mLogoImage.Draw(hdc, 0, 0, width, height);
     }
+        
+    
 
   
     Time::Render(hdc);

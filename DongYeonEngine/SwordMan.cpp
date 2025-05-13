@@ -156,6 +156,7 @@ void SwordMan::Update(Player& p)
             if (mAttackFrameTime >= frameDuration)
             {
                 mCurrenAttackFrame++;
+                std::cout << mAttackFrameTime << std::endl;
                 if (mCurrenAttackFrame >= 3)
                 {
                     mIsAttack = false;

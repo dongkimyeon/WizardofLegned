@@ -1,12 +1,30 @@
 ﻿#include "Archer.h"
 #include "Time.h"
+#include <cmath>
+
 Archer::Archer()
 {
+    // GDI+ 초기화
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
     mX = 1920 / 2;
     mY = 1080 / 2;
     rect = { (int)(mX - 20), (int)(mY + 200), (int)(mX + 20), (int)(mY + 20) };
     speed = 100.0f;
     state = EnemyState::RIGHT;
+    hp = 100;
+    mIsMoving = false;
+    mCurrentWalkFrame = 0;
+    mIsAttack = false;
+    mCurrenAttackFrame = 0;
+    mIsdead = false;
+    mCurrentDeadFrame = 0;
+    mIsHit = false;
+    mCurrentHitFrame = 0;
+    mIsShot = false;
+
+    mAttackFrameTime = 0.0f;
+    mAttackCooldown = 0.0f;
 
     // Right 애니메이션 로드
     mRightIdleAnimation.Load(L"resources/Monster/ARCHER/ArcherRight/ArcherIdle/ARCHER_RIGHT_00.png");
@@ -42,7 +60,7 @@ Archer::Archer()
 
     // Left 애니메이션 로드
     mLeftIdleAnimation.Load(L"resources/Monster/ARCHER/ArcherLeft/ArcherIdle/ARCHER_LEFT_00.png");
-    if (mLeftIdleAnimation.IsNull()) wprintf(L"Failed to load: resources/Monster/ARCHER/ArcherLeft/ArcherIdle/ARCHER_LEFT_00 לגדול.png\n");
+    if (mLeftIdleAnimation.IsNull()) wprintf(L"Failed to load: resources/Monster/ARCHER/ArcherLeft/ArcherIdle/ARCHER_LEFT_00.png\n");
     for (int i = 0; i < 4; ++i)
     {
         wchar_t path[256];
@@ -71,116 +89,204 @@ Archer::Archer()
         mLeftWalkAnimation[i].Load(path);
         if (mLeftWalkAnimation[i].IsNull()) wprintf(L"Failed to load: %s\n", path);
     }
+    for (int i = 0; i < 4; ++i)
+    {
+        wchar_t path[256];
+        swprintf_s(path, L"resources/Monster/ARCHER/ARCHER_BOW/Idle/ARCHER_BOW_%02d.png", i);
+        mBowAttackAnimation[i].Load(path);
+        if (mBowAttackAnimation[i].IsNull()) wprintf(L"Failed to load: %s\n", path);
+    }
+}
+
+Archer::~Archer()
+{
+    Gdiplus::GdiplusShutdown(gdiplusToken); // GDI+ 해제
 }
 
 void Archer::Update(Player& p)
 {
     // rect 업데이트 (이미지 중심에 맞게)
-    int imageWidth = mRightIdleAnimation.GetWidth(); // 기본적으로 Idle 이미지 크기 기준
+    int imageWidth = mRightIdleAnimation.GetWidth();
     int imageHeight = mRightIdleAnimation.GetHeight();
     rect.left = static_cast<int>(mX - imageWidth / 2.0f) + 45;
     rect.top = static_cast<int>(mY - imageHeight / 2.0f) + 40;
     rect.right = static_cast<int>(mX + imageWidth / 2.0f) - 54;
     rect.bottom = static_cast<int>(mY + imageHeight / 2.0f) - 33;
 
+    // 플레이어와의 거리 계산
+    float dx = p.GetPositionX() - mX;
+    float dy = p.GetPositionY() - mY;
+    float distance = sqrt(dx * dx + dy * dy);
+
+    // 상태 설정 (플레이어 방향에 따라)
+    state = (dx > 0) ? EnemyState::RIGHT : EnemyState::LEFT;
+
+    // 공격 쿨타임 업데이트
+    if (mAttackCooldown > 0.0f)
+    {
+        mAttackCooldown -= Time::DeltaTime();
+    }
+
     // 애니메이션 프레임 업데이트
-    static float frameTime = 0.0f;
-    frameTime += Time::DeltaTime(); // Time.h에서 제공되는 DeltaTime 사용
+    float frameTime = 0.0f; // 비공격 애니메이션용
+    frameTime += Time::DeltaTime();
 
     if (mIsdead)
     {
         if (frameTime >= 0.1f)
         {
-            mCurrentDeadFrame = (mCurrentDeadFrame + 1) % 6; // Die: 6프레임
+            mCurrentDeadFrame = (mCurrentDeadFrame + 1) % 6;
             frameTime = 0.0f;
         }
+        return;
     }
     else if (mIsHit)
     {
         if (frameTime >= 0.1f)
         {
-            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2; // Hit: 2프레임
+            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
             frameTime = 0.0f;
+            if (mCurrentHitFrame == 0) mIsHit = false;
+        }
+        return;
+    }
+    else
+    {
+        if (distance <= AttackRange && mAttackCooldown <= 0.0f && !mIsAttack)
+        {
+            mIsAttack = true;
+            mCurrenAttackFrame = 0;
+            mAttackFrameTime = 0.0f; // 공격 시작 시 타이머 초기화
+            mIsMoving = false;
+        }
+        else if (distance <= PlayerDetectRange && distance > AttackRange)
+        {
+            mIsMoving = true;
+            mIsAttack = false;
+            float angle = atan2(dy, dx);
+            mX += cos(angle) * speed * Time::DeltaTime();
+            mY += sin(angle) * speed * Time::DeltaTime();
+        }
+        else
+        {
+            mIsMoving = false;
+            mIsAttack = false;
         }
     }
-    else if (mIsAttack)
+
+    // 공격 애니메이션 프레임 업데이트
+    if (mIsAttack)
     {
-        if (frameTime >= 0.1f)
+        mAttackFrameTime += Time::DeltaTime();
+       
+        float frameDuration = 0.5f;
+        if (mAttackFrameTime >= frameDuration)
         {
-            mCurrenAttackFrame = (mCurrenAttackFrame + 1) % 3; // Attack: 3프레임
-            frameTime = 0.0f;
+            mCurrenAttackFrame++;
+            if (mCurrenAttackFrame >= 4)
+            {
+                mIsAttack = false;
+                mCurrenAttackFrame = 0;
+                mAttackCooldown = 3.0f; // 3초 쿨타임
+                mIsShot = true; // 공격 후 샷 플래그
+            }
+            mAttackFrameTime = 0.0f;
         }
+        std::cout << mAttackFrameTime << std::endl;
     }
     else if (mIsMoving)
     {
         if (frameTime >= 0.1f)
         {
-            mCurrentWalkFrame = (mCurrentWalkFrame + 1) % 6; // Walk: 6프레임
+            mCurrentWalkFrame = (mCurrentWalkFrame + 1) % 5;
             frameTime = 0.0f;
         }
     }
+
+    // 체력 확인
+    if (hp <= 0)
+    {
+        mIsdead = true;
+        mCurrentDeadFrame = 0;
+    }
+
+    std::cout << mIsAttack << std::endl;
 }
 
 void Archer::LateUpdate()
 {
 }
 
-void Archer::Render(HDC hdc)
+void Archer::Render(HDC hdc, Player& p)
 {
-    // 충돌 영역 사각형
     Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
 
     CImage* currentImage = nullptr;
-
-    // 상태에 따라 렌더링할 이미지 선택
     if (mIsdead)
     {
-        if (state == EnemyState::RIGHT)
-            currentImage = &mRightDieAnimaion[mCurrentDeadFrame];
-        else
-            currentImage = &mLeftDieAnimaion[mCurrentDeadFrame];
+        currentImage = (state == EnemyState::RIGHT) ? &mRightDieAnimaion[mCurrentDeadFrame] : &mLeftDieAnimaion[mCurrentDeadFrame];
     }
     else if (mIsHit)
     {
-        if (state == EnemyState::RIGHT)
-            currentImage = &mRightHitAnimation[mCurrentHitFrame];
-        else
-            currentImage = &mLeftHitAnimation[mCurrentHitFrame];
+        currentImage = (state == EnemyState::RIGHT) ? &mRightHitAnimation[mCurrentHitFrame] : &mLeftHitAnimation[mCurrentHitFrame];
     }
     else if (mIsAttack)
     {
-        if (state == EnemyState::RIGHT)
-            currentImage = &mRightAttackAnimation[mCurrenAttackFrame];
-        else
-            currentImage = &mLeftAttackAnimation[mCurrenAttackFrame];
+        currentImage = (state == EnemyState::RIGHT) ? &mRightAttackAnimation[mCurrenAttackFrame] : &mLeftAttackAnimation[mCurrenAttackFrame];
     }
     else if (mIsMoving)
     {
-        if (state == EnemyState::RIGHT)
-            currentImage = &mRightWalkAnimation[mCurrentWalkFrame];
-        else
-            currentImage = &mLeftWalkAnimation[mCurrentWalkFrame];
+        currentImage = (state == EnemyState::RIGHT) ? &mRightWalkAnimation[mCurrentWalkFrame] : &mLeftWalkAnimation[mCurrentWalkFrame];
     }
     else
     {
-        if (state == EnemyState::RIGHT)
-            currentImage = &mRightIdleAnimation;
-        else
-            currentImage = &mLeftIdleAnimation;
+        currentImage = (state == EnemyState::RIGHT) ? &mRightIdleAnimation : &mLeftIdleAnimation;
     }
 
-    // 이미지 크기 가져오기
     int imageWidth = 141 - 60;
     int imageHeight = 145 - 60;
-
-    // 중심을 mX, mY에 맞추기 위해 왼쪽 상단 좌표 계산
     int drawX = static_cast<int>(mX - imageWidth / 2.0f);
     int drawY = static_cast<int>(mY - imageHeight / 2.0f);
 
-    // 캐릭터 이미지 그리기
+    // 아처 본체 이미지 렌더링
     currentImage->Draw(hdc, drawX, drawY, imageWidth, imageHeight);
 
-    
+    // 활 애니메이션 렌더링 (공격 중일 때)
+    if (mIsAttack)
+    {
+        CImage* bowImage = &mBowAttackAnimation[mCurrenAttackFrame];
+        int bowWidth = bowImage->GetWidth() * 0.4;
+        int bowHeight = bowImage->GetHeight() * 0.4;
+
+        Gdiplus::Graphics graphics(hdc);
+        graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+        Gdiplus::ImageAttributes imageAttr;
+        imageAttr.SetColorKey(Gdiplus::Color(0, 0, 0), Gdiplus::Color(0, 0, 0));
+
+        // 플레이어 방향으로 회전
+        float dx = p.GetPositionX() - mX;
+        float dy = p.GetPositionY() - mY;
+        float angle = atan2(dy, dx) * 180.0f / 3.1415926535f;
+
+        // 활 위치를 아처 중심에서 약간 오프셋
+        float bowOffset = 20.0f; // 스워드맨 effectOffset(30.0f)보다 작게 조정
+        float directionX = cos(atan2(dy, dx));
+        float directionY = sin(atan2(dy, dx));
+        int bowDrawX = static_cast<int>(mX + directionX * bowOffset - bowWidth / 2.0f);
+        int bowDrawY = static_cast<int>(mY + directionY * bowOffset - bowHeight / 2.0f);
+
+        Gdiplus::Matrix matrix;
+        matrix.RotateAt(angle, Gdiplus::PointF(mX + directionX * bowOffset, mY + directionY * bowOffset));
+        graphics.SetTransform(&matrix);
+
+        Gdiplus::Bitmap bowBitmap((HBITMAP)*bowImage, nullptr);
+        graphics.DrawImage(&bowBitmap,
+            Gdiplus::Rect(bowDrawX, bowDrawY, bowWidth, bowHeight),
+            0, 0, bowBitmap.GetWidth(), bowBitmap.GetHeight(),
+            Gdiplus::UnitPixel, &imageAttr);
+
+        graphics.ResetTransform();
+    }
 }
 
 void Archer::SetPosition(float x, float y)

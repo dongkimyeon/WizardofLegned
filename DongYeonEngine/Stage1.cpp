@@ -53,7 +53,7 @@ void Stage1::Render(HDC hdc)
 {
  
     wizard.Render(hdc);
-    archer.Render(hdc);
+    archer.Render(hdc, player);
     swordman.Render(hdc, player);
     player.Render(hdc);
     WCHAR swordManHpText[100];
