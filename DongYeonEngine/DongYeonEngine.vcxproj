@@ -169,6 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="DongYeonEngine.ico" />
+    <Image Include="resources\Monster\ARCHER\ARCHER_BOW\Attack\ARCHER_BOW_0.png" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

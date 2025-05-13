@@ -15,6 +15,7 @@ public:
     void SetPosition(float x, float y) override;
 
     void TakeDamage(int playerDamage) { hp -= playerDamage; }
+
     int GetDamage() { return damage; }
     int GetHp() { return hp; }
     EnemyState GetState() { return state; }

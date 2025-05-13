@@ -153,5 +153,8 @@
     <Image Include="DongYeonEngine.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="resources\Monster\ARCHER\ARCHER_BOW\Attack\ARCHER_BOW_0.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
 </Project>

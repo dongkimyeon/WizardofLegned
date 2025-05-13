@@ -156,7 +156,6 @@ void SwordMan::Update(Player& p)
             if (mAttackFrameTime >= frameDuration)
             {
                 mCurrenAttackFrame++;
-                std::cout << mAttackFrameTime << std::endl;
                 if (mCurrenAttackFrame >= 3)
                 {
                     mIsAttack = false;
@@ -346,7 +345,7 @@ void SwordMan::Render(HDC hdc, Player& p)
     int drawX = static_cast<int>(mX - imageWidth / 2.0f);
     int drawY = static_cast<int>(mY - imageHeight / 2.0f);
 
-    // 몬스터 이미지는 원래대로 렌더링
+    // 소드맨 이미지는 원래대로 렌더링
     currentImage->Draw(hdc, drawX, drawY, imageWidth, imageHeight);
 
     if (mIsAttack && mCurrenAttackFrame >= 1)

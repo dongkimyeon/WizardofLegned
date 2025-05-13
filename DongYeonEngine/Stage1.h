@@ -4,6 +4,10 @@
 #include "Wizard.h"
 #include "SwordMan.h"
 #include "Archer.h"
+#include "Arrow.h"
+#include <vector>
+
+
 
 class Stage1 : public Scene {
 public:
@@ -13,10 +17,14 @@ public:
     void Update();
     void LateUpdate();
     void Render(HDC hdc);
+
+    void AddArrow(Arrow* arrow) { arrows.push_back(arrow); }
+
 private:
     Player player;
     Wizard wizard;
     SwordMan swordman;
     Archer archer;
-    float swordmanAttackCooldown; // 스워드맨 공격 쿨타임
+    std::vector<Arrow*> arrows;
+    float swordmanAttackCooldown;
 };

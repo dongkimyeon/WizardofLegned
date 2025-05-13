@@ -1,10 +1,11 @@
 ﻿#include "Archer.h"
 #include "Time.h"
-#include <cmath>
+#include "Arrow.h"
+#include "Stage1.h"
+
 
 Archer::Archer()
 {
-    // GDI+ 초기화
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
     mX = 1920 / 2;
@@ -26,7 +27,6 @@ Archer::Archer()
     mAttackFrameTime = 0.0f;
     mAttackCooldown = 0.0f;
 
-    // Right 애니메이션 로드
     mRightIdleAnimation.Load(L"resources/Monster/ARCHER/ArcherRight/ArcherIdle/ARCHER_RIGHT_00.png");
     if (mRightIdleAnimation.IsNull()) wprintf(L"Failed to load: resources/Monster/ARCHER/ArcherRight/ArcherIdle/ARCHER_RIGHT_00.png\n");
     for (int i = 0; i < 4; ++i)
@@ -58,7 +58,6 @@ Archer::Archer()
         if (mRightWalkAnimation[i].IsNull()) wprintf(L"Failed to load: %s\n", path);
     }
 
-    // Left 애니메이션 로드
     mLeftIdleAnimation.Load(L"resources/Monster/ARCHER/ArcherLeft/ArcherIdle/ARCHER_LEFT_00.png");
     if (mLeftIdleAnimation.IsNull()) wprintf(L"Failed to load: resources/Monster/ARCHER/ArcherLeft/ArcherIdle/ARCHER_LEFT_00.png\n");
     for (int i = 0; i < 4; ++i)
@@ -100,12 +99,11 @@ Archer::Archer()
 
 Archer::~Archer()
 {
-    Gdiplus::GdiplusShutdown(gdiplusToken); // GDI+ 해제
+    Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
-void Archer::Update(Player& p)
+void Archer::Update(Player& p, Stage1* stage)
 {
-    // rect 업데이트 (이미지 중심에 맞게)
     int imageWidth = mRightIdleAnimation.GetWidth();
     int imageHeight = mRightIdleAnimation.GetHeight();
     rect.left = static_cast<int>(mX - imageWidth / 2.0f) + 45;
@@ -113,104 +111,119 @@ void Archer::Update(Player& p)
     rect.right = static_cast<int>(mX + imageWidth / 2.0f) - 54;
     rect.bottom = static_cast<int>(mY + imageHeight / 2.0f) - 33;
 
-    // 플레이어와의 거리 계산
-    float dx = p.GetPositionX() - mX;
-    float dy = p.GetPositionY() - mY;
-    float distance = sqrt(dx * dx + dy * dy);
+    float playerX = p.GetPositionX();
+    float playerY = p.GetPositionY();
+    float distance = static_cast<float>(sqrt(pow(mX - playerX, 2) + pow(mY - playerY, 2)));
 
-    // 상태 설정 (플레이어 방향에 따라)
-    state = (dx > 0) ? EnemyState::RIGHT : EnemyState::LEFT;
-
-    // 공격 쿨타임 업데이트
     if (mAttackCooldown > 0.0f)
     {
         mAttackCooldown -= Time::DeltaTime();
     }
 
-    // 애니메이션 프레임 업데이트
-    float frameTime = 0.0f; // 비공격 애니메이션용
-    frameTime += Time::DeltaTime();
-
-    if (mIsdead)
+    if (mIsdead || mIsHit)
     {
-        if (frameTime >= 0.1f)
-        {
-            mCurrentDeadFrame = (mCurrentDeadFrame + 1) % 6;
-            frameTime = 0.0f;
-        }
-        return;
-    }
-    else if (mIsHit)
-    {
-        if (frameTime >= 0.1f)
-        {
-            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
-            frameTime = 0.0f;
-            if (mCurrentHitFrame == 0) mIsHit = false;
-        }
-        return;
+        mIsMoving = false;
+        mIsAttack = false;
+        mIsShot = false;
+        mCurrentWalkFrame = 0;
     }
     else
     {
-        if (distance <= AttackRange && mAttackCooldown <= 0.0f && !mIsAttack)
+        if (playerX > mX)
         {
-            mIsAttack = true;
-            mCurrenAttackFrame = 0;
-            mAttackFrameTime = 0.0f; // 공격 시작 시 타이머 초기화
-            mIsMoving = false;
+            state = EnemyState::RIGHT;
         }
-        else if (distance <= PlayerDetectRange && distance > AttackRange)
+        else if (playerX < mX)
         {
-            mIsMoving = true;
-            mIsAttack = false;
-            float angle = atan2(dy, dx);
-            mX += cos(angle) * speed * Time::DeltaTime();
-            mY += sin(angle) * speed * Time::DeltaTime();
+            state = EnemyState::LEFT;
+        }
+
+        if (mIsAttack)
+        {
+            mAttackFrameTime += Time::DeltaTime();
+            float frameDuration = 0.5f;
+            if (mAttackFrameTime >= frameDuration)
+            {
+                mCurrenAttackFrame++;
+                if (mCurrenAttackFrame >= 4)
+                {
+                    mIsAttack = false;
+                    mCurrenAttackFrame = 0;
+                    mAttackCooldown = 3.0f;
+                    Arrow::FireArrow(p, mX, mY, stage);
+                    mIsShot = true;
+                }
+                mAttackFrameTime = 0.0f;
+            }
         }
         else
         {
-            mIsMoving = false;
-            mIsAttack = false;
-        }
-    }
-
-    // 공격 애니메이션 프레임 업데이트
-    if (mIsAttack)
-    {
-        mAttackFrameTime += Time::DeltaTime();
-       
-        float frameDuration = 0.5f;
-        if (mAttackFrameTime >= frameDuration)
-        {
-            mCurrenAttackFrame++;
-            if (mCurrenAttackFrame >= 4)
+            if (distance <= AttackRange && mAttackCooldown <= 0.0f)
+            {
+                mIsAttack = true;
+                mIsMoving = false;
+                mCurrenAttackFrame = 0;
+                mAttackFrameTime = 0.0f;
+                mCurrentWalkFrame = 0;
+            }
+            else if (distance <= PlayerDetectRange)
+            {
+                if (!mIsMoving)
+                {
+                    mCurrentWalkFrame = 0;
+                }
+                mIsAttack = false;
+                mIsMoving = true;
+                float directionX = (playerX - mX) / distance;
+                float directionY = (playerY - mY) / distance;
+                mX += directionX * speed * Time::DeltaTime();
+                mY += directionY * speed * Time::DeltaTime();
+            }
+            else
             {
                 mIsAttack = false;
+                mIsMoving = false;
                 mCurrenAttackFrame = 0;
-                mAttackCooldown = 3.0f; // 3초 쿨타임
-                mIsShot = true; // 공격 후 샷 플래그
+                mCurrentWalkFrame = 0;
             }
-            mAttackFrameTime = 0.0f;
         }
-        std::cout << mAttackFrameTime << std::endl;
     }
-    else if (mIsMoving)
+
+    static float walkFrameTime = 0.0f;
+    if (!mIsAttack && mIsMoving)
     {
-        if (frameTime >= 0.1f)
+        walkFrameTime += Time::DeltaTime();
+        if (walkFrameTime >= 0.1f)
         {
             mCurrentWalkFrame = (mCurrentWalkFrame + 1) % 5;
-            frameTime = 0.0f;
+            walkFrameTime = 0.0f;
         }
     }
-
-    // 체력 확인
-    if (hp <= 0)
+    else
     {
-        mIsdead = true;
-        mCurrentDeadFrame = 0;
+        walkFrameTime = 0.0f;
     }
 
-    std::cout << mIsAttack << std::endl;
+    static float deadFrameTime = 0.0f;
+    static float hitFrameTime = 0.0f;
+    if (mIsdead)
+    {
+        deadFrameTime += Time::DeltaTime();
+        if (deadFrameTime >= 0.1f)
+        {
+            mCurrentDeadFrame = (mCurrentDeadFrame + 1) % 6;
+            deadFrameTime = 0.0f;
+        }
+    }
+    else if (mIsHit)
+    {
+        hitFrameTime += Time::DeltaTime();
+        if (hitFrameTime >= 0.1f)
+        {
+            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
+            hitFrameTime = 0.0f;
+        }
+    }
 }
 
 void Archer::LateUpdate()
@@ -222,6 +235,7 @@ void Archer::Render(HDC hdc, Player& p)
     Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
 
     CImage* currentImage = nullptr;
+
     if (mIsdead)
     {
         currentImage = (state == EnemyState::RIGHT) ? &mRightDieAnimaion[mCurrentDeadFrame] : &mLeftDieAnimaion[mCurrentDeadFrame];
@@ -248,30 +262,36 @@ void Archer::Render(HDC hdc, Player& p)
     int drawX = static_cast<int>(mX - imageWidth / 2.0f);
     int drawY = static_cast<int>(mY - imageHeight / 2.0f);
 
-    // 아처 본체 이미지 렌더링
     currentImage->Draw(hdc, drawX, drawY, imageWidth, imageHeight);
 
-    // 활 애니메이션 렌더링 (공격 중일 때)
     if (mIsAttack)
     {
-        CImage* bowImage = &mBowAttackAnimation[mCurrenAttackFrame];
-        int bowWidth = bowImage->GetWidth() * 0.4;
-        int bowHeight = bowImage->GetHeight() * 0.4;
-
         Gdiplus::Graphics graphics(hdc);
         graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
         Gdiplus::ImageAttributes imageAttr;
         imageAttr.SetColorKey(Gdiplus::Color(0, 0, 0), Gdiplus::Color(0, 0, 0));
 
-        // 플레이어 방향으로 회전
+        int alpha = (mCurrenAttackFrame == 0) ? 64 :
+            (mCurrenAttackFrame == 1) ? 128 :
+            (mCurrenAttackFrame == 2) ? 192 : 255;
+        Gdiplus::Pen pen(Gdiplus::Color(alpha, 255, 0, 0), 2.0f);
+
         float dx = p.GetPositionX() - mX;
         float dy = p.GetPositionY() - mY;
-        float angle = atan2(dy, dx) * 180.0f / 3.1415926535f;
+        float distance = static_cast<float>(sqrt(dx * dx + dy * dy));
+        float directionX = (distance > 0.0f) ? dx / distance : (state == EnemyState::RIGHT ? 1.0f : -1.0f);
+        float directionY = (distance > 0.0f) ? dy / distance : 0.0f;
+        float angle = static_cast<float>(atan2(dy, dx) * 180.0 / 3.1415926535);
 
-        // 활 위치를 아처 중심에서 약간 오프셋
-        float bowOffset = 20.0f; // 스워드맨 effectOffset(30.0f)보다 작게 조정
-        float directionX = cos(atan2(dy, dx));
-        float directionY = sin(atan2(dy, dx));
+        float bowOffset = 10.0f;
+        Gdiplus::PointF startPoint(mX + directionX * bowOffset, mY + directionY * bowOffset);
+        Gdiplus::PointF endPoint(mX + directionX * AttackRange * 2, mY + directionY * AttackRange * 2);
+        graphics.DrawLine(&pen, startPoint, endPoint);
+
+        int bowFrame = (std::min)(mCurrenAttackFrame, 3);
+        CImage* bowImage = &mBowAttackAnimation[bowFrame];
+        int bowWidth = static_cast<int>(bowImage->GetWidth() * 0.4f);
+        int bowHeight = static_cast<int>(bowImage->GetHeight() * 0.4f);
         int bowDrawX = static_cast<int>(mX + directionX * bowOffset - bowWidth / 2.0f);
         int bowDrawY = static_cast<int>(mY + directionY * bowOffset - bowHeight / 2.0f);
 
