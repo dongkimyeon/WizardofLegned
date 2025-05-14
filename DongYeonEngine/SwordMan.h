@@ -14,7 +14,7 @@ public:
     void Render(HDC hdc, Player& p);
     void SetPosition(float x, float y) override;
 
-    void TakeDamage(int playerDamage) { hp -= playerDamage; }
+    void TakeDamage(int d);
 
     int GetDamage() { return damage; }
     int GetHp() { return hp; }
@@ -53,7 +53,7 @@ private:
     int mCurrentWalkFrame = 0;
     bool mIsAttack = false;
     int mCurrenAttackFrame = 0;
-    bool mIsdead = false;
+    bool mIsDead = false;
     int mCurrentDeadFrame = 0;
     bool mIsHit = false;
     int mCurrentHitFrame = 0;
@@ -62,6 +62,9 @@ private:
     float mAttackDirectionX;
     float mAttackDirectionY;
     
+
+    float mHitTimer;
+
     float mAttackCooldown = 0;
     float mAttackFrameTime;
     float PlayerDetectRange = 300.0f;
@@ -71,6 +74,9 @@ private:
 
     POINT mEffectHitboxPoints[4]; 
     bool mHasEffectHitbox;
+
+
+    bool CheckPointInPolygon(POINT& point, POINT polygon[4]);
 
     // GDI+ ฐüทร
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;

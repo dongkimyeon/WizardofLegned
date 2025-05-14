@@ -156,5 +156,26 @@
     <Image Include="resources\Monster\ARCHER\ARCHER_BOW\Attack\ARCHER_BOW_0.png">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="..\..\ezgif-split\Slash00.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="..\..\ezgif-split\Slash01.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="..\..\ezgif-split\Slash02.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="..\..\ezgif-split\Slash03.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="..\..\ezgif-split\Slash04.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="..\..\ezgif-split\Slash05.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="..\..\ezgif-split\Slash06.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
 </Project>

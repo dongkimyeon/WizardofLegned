@@ -168,6 +168,13 @@
     <ResourceCompile Include="DongYeonEngine.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\..\ezgif-split\Slash00.png" />
+    <Image Include="..\..\ezgif-split\Slash01.png" />
+    <Image Include="..\..\ezgif-split\Slash02.png" />
+    <Image Include="..\..\ezgif-split\Slash03.png" />
+    <Image Include="..\..\ezgif-split\Slash04.png" />
+    <Image Include="..\..\ezgif-split\Slash05.png" />
+    <Image Include="..\..\ezgif-split\Slash06.png" />
     <Image Include="DongYeonEngine.ico" />
     <Image Include="resources\Monster\ARCHER\ARCHER_BOW\Attack\ARCHER_BOW_0.png" />
     <Image Include="small.ico" />

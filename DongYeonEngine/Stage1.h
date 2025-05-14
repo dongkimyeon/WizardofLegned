@@ -27,4 +27,5 @@ private:
     Archer archer;
     std::vector<Arrow*> arrows;
     float swordmanAttackCooldown;
+    float playerSlashAttackCooldown;
 };

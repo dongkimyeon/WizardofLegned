@@ -15,7 +15,8 @@ SwordMan::SwordMan()
     mCurrentWalkFrame = 0;
     mIsAttack = false;
     mCurrenAttackFrame = 0;
-    mIsdead = false;
+    mIsDead = false;
+    mHitTimer = 0.0f;
     mCurrentDeadFrame = 0;
     mIsHit = false;
     mCurrentHitFrame = 0;
@@ -118,6 +119,36 @@ void SwordMan::Update(Player& p)
     rect.right = static_cast<int>(mX + imageWidth / 2.0f) - 45;
     rect.bottom = static_cast<int>(mY + imageHeight / 2.0f) - 45;
 
+    // 죽음 상태 처리
+    if (mIsDead) {
+        static float dieTimer = 0.0f;
+        if (mCurrentDeadFrame < 5) { // 0~5까지 6프레임
+            dieTimer += Time::DeltaTime();
+            if (dieTimer >= 0.1f) {
+                mCurrentDeadFrame++;
+                dieTimer = 0.0f;
+            }
+        }
+        return;
+    }
+
+    // 피격 상태 처리
+    float deltaTime = Time::DeltaTime();
+    static float animationTimer = 0.0f;
+    const float hitFrameDuration = 0.1f;
+    if (mIsHit) {
+        mHitTimer -= deltaTime;
+        if (mHitTimer <= 0.0f) {
+            mIsHit = false;
+        }
+        animationTimer += deltaTime;
+        if (animationTimer >= hitFrameDuration) {
+            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
+            animationTimer = 0.0f;
+        }
+        return;
+    }
+
     // 플레이어와의 거리 계산
     float playerX = p.GetPositionX();
     float playerY = p.GetPositionY();
@@ -126,80 +157,71 @@ void SwordMan::Update(Player& p)
     // 공격 쿨타임 업데이트
     if (mAttackCooldown > 0.0f)
     {
-        mAttackCooldown -= Time::DeltaTime();
+        mAttackCooldown -= deltaTime;
     }
 
-    // 상태 업데이트
-    if (mIsdead || mIsHit)
+    // 방향 설정
+    if (playerX > mX)
     {
-        mIsMoving = false;
-        mIsAttack = false;
-        mHasEffectHitbox = false; // 히트박스 비활성화
+        state = EnemyState::RIGHT;
+    }
+    else if (playerX < mX)
+    {
+        state = EnemyState::LEFT;
+    }
+
+    // 공격 상태 관리
+    if (mIsAttack)
+    {
+        mAttackFrameTime += deltaTime;
+        float frameDuration = (mCurrenAttackFrame == 0) ? 0.7f : 0.2f;
+        if (mAttackFrameTime >= frameDuration)
+        {
+            mCurrenAttackFrame++;
+            if (mCurrenAttackFrame >= 3)
+            {
+                mIsAttack = false;
+                mCurrenAttackFrame = 0;
+                mAttackCooldown = 3.0f;
+                mHasEffectHitbox = false; // 공격 종료 시 히트박스 비활성화
+            }
+            mAttackFrameTime = 0.0f;
+        }
     }
     else
     {
-        // 방향 설정
-        if (playerX > mX)
+        if (distance <= AttackRange && mAttackCooldown <= 0.0f)
         {
-            state = EnemyState::RIGHT;
-        }
-        else if (playerX < mX)
-        {
-            state = EnemyState::LEFT;
-        }
-
-        // 공격 상태 관리
-        if (mIsAttack)
-        {
-            mAttackFrameTime += Time::DeltaTime();
-            float frameDuration = (mCurrenAttackFrame == 0) ? 0.7f : 0.2f;
-            if (mAttackFrameTime >= frameDuration)
+            mIsAttack = true;
+            mIsMoving = false;
+            mCurrenAttackFrame = 0; // 공격 시작 시 프레임 초기화
+            mAttackFrameTime = 0.0f; // 타이머 초기화
+            // 공격 시작 시 방향 벡터 저장
+            if (distance > 0.0f)
             {
-                mCurrenAttackFrame++;
-                if (mCurrenAttackFrame >= 3)
-                {
-                    mIsAttack = false;
-                    mCurrenAttackFrame = 0;
-                    mAttackCooldown = 3.0f;
-                    mHasEffectHitbox = false; // 공격 종료 시 히트박스 비활성화
-                }
-                mAttackFrameTime = 0.0f;
-            }
-        }
-        else
-        {
-            if (distance <= AttackRange && mAttackCooldown <= 0.0f)
-            {
-                mIsAttack = true;
-                mIsMoving = false;
-                mCurrenAttackFrame = 0; // 공격 시작 시 프레임 초기화
-                mAttackFrameTime = 0.0f; // 타이머 초기화
-                // 공격 시작 시 방향 벡터 저장
-                if (distance > 0.0f)
-                {
-                    mAttackDirectionX = (playerX - mX) / distance;
-                    mAttackDirectionY = (playerY - mY) / distance;
-                }
-                else
-                {
-                    mAttackDirectionX = (state == EnemyState::RIGHT) ? 1.0f : -1.0f;
-                    mAttackDirectionY = 0.0f;
-                }
-            }
-            else if (distance <= PlayerDetectRange)
-            {
-                mIsAttack = false;
-                mIsMoving = true;
-                float directionX = (playerX - mX) / distance;
-                float directionY = (playerY - mY) / distance;
-                mX += directionX * speed * Time::DeltaTime();
-                mY += directionY * speed * Time::DeltaTime();
+                mAttackDirectionX = (playerX - mX) / distance;
+                mAttackDirectionY = (playerY - mY) / distance;
             }
             else
             {
-                mIsAttack = false;
-                mIsMoving = false;
+                mAttackDirectionX = (state == EnemyState::RIGHT) ? 1.0f : -1.0f;
+                mAttackDirectionY = 0.0f;
             }
+        }
+        else if (distance <= PlayerDetectRange)
+        {
+            mIsAttack = false;
+            mIsMoving = true;
+            float directionX = (playerX - mX) / distance;
+            float directionY = (playerY - mY) / distance;
+            mX += directionX * speed * deltaTime;
+            mY += directionY * speed * deltaTime;
+        }
+        else
+        {
+            mIsAttack = false;
+            mIsMoving = false;
+            mHasEffectHitbox = false;
         }
     }
 
@@ -241,27 +263,11 @@ void SwordMan::Update(Player& p)
         mHasEffectHitbox = false;
     }
 
-    // 애니메이션 프레임 업데이트 (공격 외 상태)
-    static float frameTime = 0.0f;
-    frameTime += Time::DeltaTime();
-    if (mIsdead)
+    // 이동 애니메이션 프레임 업데이트
+    if (!mIsDead && !mIsHit && !mIsAttack && mIsMoving)
     {
-        if (frameTime >= 0.1f)
-        {
-            mCurrentDeadFrame = (mCurrentDeadFrame + 1) % 6;
-            frameTime = 0.0f;
-        }
-    }
-    else if (mIsHit)
-    {
-        if (frameTime >= 0.1f)
-        {
-            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
-            frameTime = 0.0f;
-        }
-    }
-    else if (!mIsAttack && mIsMoving)
-    {
+        static float frameTime = 0.0f;
+        frameTime += deltaTime;
         if (frameTime >= 0.1f)
         {
             mCurrentWalkFrame = (mCurrentWalkFrame + 1) % 6;
@@ -319,7 +325,7 @@ void SwordMan::Render(HDC hdc, Player& p)
     }
 
     CImage* currentImage = nullptr;
-    if (mIsdead)
+    if (mIsDead)
     {
         currentImage = (state == EnemyState::RIGHT) ? &mRightDieAnimaion[mCurrentDeadFrame] : &mLeftDieAnimaion[mCurrentDeadFrame];
     }
@@ -402,13 +408,35 @@ void SwordMan::SetPosition(float x, float y)
     mY = y;
 }
 
-bool SwordMan::GetEffectHitbox(POINT outPoints[4]) 
+void SwordMan::TakeDamage(int d)
+{
+    if (mIsDead) return;
+    hp -= d;
+    if (hp <= 0) {
+        hp = 0;
+        mIsDead = true;
+        mIsHit = false;
+        mIsAttack = false;
+        mIsMoving = false;
+        mCurrentDeadFrame = 0;
+    }
+    else {
+        mIsHit = true;
+        mHitTimer = 0.2f; // 피격 애니메이션 0.2초
+        mCurrentHitFrame = 0;
+        mIsAttack = false;
+        mIsMoving = false;
+    }
+}
+
+bool SwordMan::GetEffectHitbox(POINT outPoints[4])
 {
     for (int i = 0; i < 4; ++i) outPoints[i] = mEffectHitboxPoints[i];
     return mHasEffectHitbox;
 }
 
-bool CheckPointInPolygon( POINT& point,  POINT polygon[4])  {
+bool SwordMan::CheckPointInPolygon(POINT& point, POINT polygon[4])
+{
     int crossings = 0;
     for (int i = 0; i < 4; ++i) {
         auto p1 = polygon[i];
@@ -420,6 +448,7 @@ bool CheckPointInPolygon( POINT& point,  POINT polygon[4])  {
     }
     return (crossings % 2) == 1;
 }
+
 bool SwordMan::CheckCollisionWithRect(RECT& otherRect)
 {
     if (!mHasEffectHitbox) return false;

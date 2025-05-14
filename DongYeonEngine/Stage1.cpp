@@ -11,6 +11,7 @@ Stage1::Stage1()
     swordman.SetPosition(700, 100);
     wizard.SetPosition(900, 100);
     swordmanAttackCooldown = 0.0f;
+    playerSlashAttackCooldown = 0.0f;
 }
 
 Stage1::~Stage1()
@@ -51,6 +52,11 @@ void Stage1::Update()
     {
         swordmanAttackCooldown -= Time::DeltaTime();
     }
+    //플레이어 공격쿨타임
+    if (playerSlashAttackCooldown > 0.0f)
+    {
+        playerSlashAttackCooldown -= Time::DeltaTime();
+    }
 
     RECT playerRect = player.GetRect();
     if (swordmanAttackCooldown <= 0.0f && swordman.CheckCollisionWithRect(playerRect))
@@ -58,6 +64,15 @@ void Stage1::Update()
         std::cout << "Swordman hit player" << std::endl;
         player.TakeDamage(swordman.GetDamage());
         swordmanAttackCooldown = 0.5f;
+    }
+
+    RECT EnemyRect = swordman.GetRect();
+    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect))
+    {
+        std::cout << "player hit swordman" << std::endl;
+        swordman.TakeDamage(player.GetDamage());
+        playerSlashAttackCooldown = 0.4;
+      
     }
 }
 
