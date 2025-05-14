@@ -200,13 +200,13 @@ void Player::Update()
     const float walkFrameDuration = 0.1f;
     const float dashDuration = 0.4f;
     const float dashFrameDuration = dashDuration / 8.0f;
-    const float attackDuration = 0.8f;
+    const float attackDuration = 0.6f;
     const float attackFrameDuration = attackDuration / 16.0f;
     const float hitDuration = 0.2f;
     const float hitFrameDuration = hitDuration / 2.0f;
     float currentSpeed = speed;
-
-
+    static int clickCounter = 0; // 클릭 카운터 추가
+    static int attackEndFrame = mMouseClickFlag ? 16 : 8; // true면 8-15, false면 0-7
     // rect 업데이트
     int imageWidth = mFrontIdleAnimation.GetWidth();
     int imageHeight = mFrontIdleAnimation.GetHeight();
@@ -231,8 +231,8 @@ void Player::Update()
     if (!mIsAttack && Input::GetKeyDown(eKeyCode::LButton)) {
         mIsAttack = true;
         mAttackTimer = attackDuration;
-        mCurrentAttackFrame = 0;
-        animationTimer = 0.0f;
+        attackEndFrame = mMouseClickFlag ? 16 : 8;
+        mCurrentAttackFrame = mMouseClickFlag ? 8 : 0;
         mMouseClickFlag = !mMouseClickFlag;
 
         Vector2 mousePos = Input::GetMousePosition();
@@ -240,62 +240,58 @@ void Player::Update()
         float dy = mousePos.y - mY;
         attackAngle = atan2f(dy, dx);
 
-        // 방향 설정
         float angle = attackAngle * 180.0f / 3.14159f;
         if (angle >= -45.0f && angle < 45.0f) state = PlayerState::RIGHT;
         else if (angle >= 45.0f && angle < 135.0f) state = PlayerState::FRONT;
         else if (angle >= 135.0f || angle < -135.0f) state = PlayerState::LEFT;
         else state = PlayerState::BACK;
+
+        animationTimer = 0.0f;
     }
+
     if (mIsAttack) {
         mAttackTimer -= deltaTime;
-        if (mAttackTimer <= 0.0f) {
+        animationTimer += deltaTime;
+
+        if (animationTimer >= attackFrameDuration) {
+            mCurrentAttackFrame++;
+            animationTimer -= attackFrameDuration;
+        }
+
+        if (mCurrentAttackFrame >= attackEndFrame || mAttackTimer <= 0.0f) {
             mIsAttack = false;
-            mCurrentAttackFrame = 0; // 공격 종료 시 프레임 리셋
-            mHasEffectHitbox = false; // 충돌 범위 비활성화
-            for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 }; // 히트박스 초기화
+            mCurrentAttackFrame = 0;
+            mHasEffectHitbox = false;
+            for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 };
             animationTimer = 0.0f;
         }
+
+        // 히트박스 업데이트
+        if ((mCurrentAttackFrame >= 4 && mCurrentAttackFrame < 8) || (mCurrentAttackFrame >= 12 && mCurrentAttackFrame < 16)) {
+            int hitboxWidth = 65;
+            int hitboxHeight = 70;
+            float effectOffset = 27.0f;
+            float centerX = mX + cos(attackAngle) * effectOffset;
+            float centerY = mY + sin(attackAngle) * effectOffset;
+
+            POINT basePoints[4] = {
+                { -hitboxWidth / 2, -hitboxHeight / 2 },
+                { hitboxWidth / 2, -hitboxHeight / 2 },
+                { hitboxWidth / 2, hitboxHeight / 2 },
+                { -hitboxWidth / 2, hitboxHeight / 2 }
+            };
+
+            for (int i = 0; i < 4; ++i) {
+                float x = (float)basePoints[i].x;
+                float y = (float)basePoints[i].y;
+                mEffectHitboxPoints[i].x = static_cast<LONG>(centerX + (x * cos(attackAngle) - y * sin(attackAngle)));
+                mEffectHitboxPoints[i].y = static_cast<LONG>(centerY + (x * sin(attackAngle) + y * cos(attackAngle)));
+            }
+            mHasEffectHitbox = true;
+        }
         else {
-            animationTimer += deltaTime;
-            if (animationTimer >= attackFrameDuration) {
-                mCurrentAttackFrame++;
-                if (mCurrentAttackFrame >= 16) {
-                    mCurrentAttackFrame = 0; // 16프레임 도달 시 리셋
-                    mIsAttack = false; // 공격 종료
-                    mHasEffectHitbox = false; // 충돌 범위 비활성화
-                    for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 }; // 히트박스 초기화
-                }
-                animationTimer = 0.0f;
-            }
-
-            // 히트박스 업데이트
-            if (mCurrentAttackFrame >= 4 && mCurrentAttackFrame < 16) { // 4~15프레임 동안 히트박스 활성화
-                int hitboxWidth = 65;
-                int hitboxHeight = 70;
-                float effectOffset = 27.0f;
-                float centerX = mX + cos(attackAngle) * effectOffset;
-                float centerY = mY + sin(attackAngle) * effectOffset;
-
-                POINT basePoints[4] = {
-                    { -hitboxWidth / 2, -hitboxHeight / 2 },
-                    { hitboxWidth / 2, -hitboxHeight / 2 },
-                    { hitboxWidth / 2, hitboxHeight / 2 },
-                    { -hitboxWidth / 2, hitboxHeight / 2 }
-                };
-
-                for (int i = 0; i < 4; ++i) {
-                    float x = (float)basePoints[i].x;
-                    float y = (float)basePoints[i].y;
-                    mEffectHitboxPoints[i].x = static_cast<LONG>(centerX + (x * cos(attackAngle) - y * sin(attackAngle)));
-                    mEffectHitboxPoints[i].y = static_cast<LONG>(centerY + (x * sin(attackAngle) + y * cos(attackAngle)));
-                }
-                mHasEffectHitbox = true;
-            }
-            else {
-                mHasEffectHitbox = false;
-                for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 }; // 히트박스 초기화
-            }
+            mHasEffectHitbox = false;
+            for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 };
         }
         return;
     }

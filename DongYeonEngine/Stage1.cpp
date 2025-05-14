@@ -21,6 +21,12 @@ Stage1::~Stage1()
         delete arrow;
     }
     arrows.clear();
+
+    for (FireBall* fireball : fireballs)
+    {
+        delete fireball;
+    }
+    fireballs.clear();
 }
 
 void Stage1::Initialize()
@@ -45,6 +51,20 @@ void Stage1::Update()
         {
             delete* it;
             it = arrows.erase(it);
+        }
+    }
+
+    for (auto it = fireballs.begin(); it != fireballs.end();)
+    {
+        if ((*it)->IsActive())
+        {
+            (*it)->Update(player);
+            ++it;
+        }
+        else
+        {
+            delete* it;
+            it = fireballs.erase(it);
         }
     }
 

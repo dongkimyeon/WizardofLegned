@@ -5,8 +5,8 @@
 #include "SwordMan.h"
 #include "Archer.h"
 #include "Arrow.h"
+#include "FireBall.h"
 #include <vector>
-
 
 
 class Stage1 : public Scene {
@@ -19,13 +19,14 @@ public:
     void Render(HDC hdc);
 
     void AddArrow(Arrow* arrow) { arrows.push_back(arrow); }
-
+    void AddFireBall(FireBall* fireball) { fireballs.push_back(fireball); }
 private:
     Player player;
     Wizard wizard;
     SwordMan swordman;
     Archer archer;
     std::vector<Arrow*> arrows;
+    std::vector<FireBall*> fireballs;
     float swordmanAttackCooldown;
     float playerSlashAttackCooldown;
 };
