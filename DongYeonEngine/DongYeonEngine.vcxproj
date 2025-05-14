@@ -130,6 +130,7 @@
     <ClInclude Include="Archer.h" />
     <ClInclude Include="Arrow.h" />
     <ClInclude Include="Entity.h" />
+    <ClInclude Include="FireBall.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="CommonInclude.h" />
     <ClInclude Include="GameObject.h" />
@@ -149,6 +150,7 @@
     <ClCompile Include="Archer.cpp" />
     <ClCompile Include="Arrow.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="FireBall.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Input.cpp" />

@@ -94,7 +94,7 @@ void Wizard::Update(Player& p)
 
     // 애니메이션 프레임 업데이트
     static float frameTime = 0.0f;
-    frameTime += Time::DeltaTime(); // Time.h에서 제공되는 DeltaTime 사용
+    frameTime += Time::DeltaTime();
 
     if (mIsdead)
     {

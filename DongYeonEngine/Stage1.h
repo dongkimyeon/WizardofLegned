@@ -20,6 +20,7 @@ public:
 
     void AddArrow(Arrow* arrow) { arrows.push_back(arrow); }
     void AddFireBall(FireBall* fireball) { fireballs.push_back(fireball); }
+
 private:
     Player player;
     Wizard wizard;

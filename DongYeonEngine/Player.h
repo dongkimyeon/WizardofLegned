@@ -62,6 +62,8 @@ private:
     CImage mRightAttackEffectAnimation[6];
     CImage mLeftAttackEffectAnimation[6];
 
+    //플레이어 피격시 애니메이션
+    
     PlayerState state = PlayerState::FRONT;
 
     // 상태 변수

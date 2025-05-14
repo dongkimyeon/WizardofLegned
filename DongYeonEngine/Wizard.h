@@ -1,6 +1,7 @@
 #pragma once
 #include "GameObject.h"
 #include "Player.h"
+#include "FireBall.h"
 class Wizard: public GameObject
 {
 public:

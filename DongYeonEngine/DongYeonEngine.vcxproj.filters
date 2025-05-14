@@ -87,6 +87,9 @@
     <ClInclude Include="Wizard.h">
       <Filter>Object\Monster\Wizard</Filter>
     </ClInclude>
+    <ClInclude Include="FireBall.h">
+      <Filter>Object\Monster\Wizard</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp">
@@ -138,6 +141,9 @@
       <Filter>Object\Monster\Archer</Filter>
     </ClCompile>
     <ClCompile Include="Wizard.cpp">
+      <Filter>Object\Monster\Wizard</Filter>
+    </ClCompile>
+    <ClCompile Include="FireBall.cpp">
       <Filter>Object\Monster\Wizard</Filter>
     </ClCompile>
   </ItemGroup>

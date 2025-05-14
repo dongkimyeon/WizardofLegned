@@ -178,6 +178,9 @@ Player::Player()
         mRightAttackEffectAnimation[i].Load(path);
         if (mRightAttackEffectAnimation[i].IsNull()) wprintf(L"Failed to load: %s\n", path);
     }
+
+    //피격시 애니메이션 
+
 }
 
 void Player::Update()
