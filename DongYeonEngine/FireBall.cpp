@@ -10,7 +10,7 @@ FireBall::FireBall(float x, float y, float dirX, float dirY)
     for (int i = 0; i < 6; ++i)
     {
         wchar_t path[256];
-        swprintf_s(path, L"resources/Monster/WIZARD/WizardFire/WIZARD_FIRE_%02d.png", i);
+        swprintf_s(path, L"resources/Monster/WIZARD/WizardFire/Attack/WIZARD_FIRE_%02d.png", i);
         HRESULT hr = mFireBallAnimation[i].Load(path);
         if (FAILED(hr)) wprintf(L"Failed to load: %s\n", path);
     }
@@ -74,41 +74,29 @@ void FireBall::Render(HDC hdc)
     // 파이어볼 이미지 렌더링
     int imageWidth = mFireBallAnimation[mCurrentFrame].GetWidth();
     int imageHeight = mFireBallAnimation[mCurrentFrame].GetHeight();
-    float scale = 0.6f;
+    float scale = 1.5f;
     int renderWidth = static_cast<int>(imageWidth * scale);
     int renderHeight = static_cast<int>(imageHeight * scale);
     int drawX = static_cast<int>(mX - renderWidth / 2.0f);
     int drawY = static_cast<int>(mY - renderHeight / 2.0f);
 
-    // 회전을 위한 PlgBlt 설정
-    float angle = static_cast<float>(atan2(mDirectionY, mDirectionX));
-    float cosA = cos(angle);
-    float sinA = sin(angle);
+    Gdiplus::Graphics graphics(hdc);
+    graphics.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    Gdiplus::ImageAttributes imageAttr;
+    imageAttr.SetColorKey(Gdiplus::Color(0, 0, 0), Gdiplus::Color(0, 0, 0));
 
-    POINT plgPts[3] = {
-        { drawX, drawY }, // 좌상
-        { drawX + renderWidth, drawY }, // 우상
-        { drawX, drawY + renderHeight } // 좌하
-    };
+    float angle = static_cast<float>(atan2(mDirectionY, mDirectionX) * 180.0 / 3.1415926535);
+    Gdiplus::Matrix matrix;
+    matrix.RotateAt(angle, Gdiplus::PointF(mX, mY));
+    graphics.SetTransform(&matrix);
 
-    // 회전된 좌표 계산
-    POINT rotatedPts[3];
-    for (int i = 0; i < 3; ++i)
-    {
-        float x = plgPts[i].x - mX;
-        float y = plgPts[i].y - mY;
-        rotatedPts[i].x = static_cast<LONG>(mX + (x * cosA - y * sinA));
-        rotatedPts[i].y = static_cast<LONG>(mY + (x * sinA + y * cosA));
-    }
+    Gdiplus::Bitmap arrowBitmap((HBITMAP)mFireBallAnimation[mCurrentFrame], nullptr);
+    graphics.DrawImage(&arrowBitmap,
+        Gdiplus::Rect(drawX, drawY, renderWidth, renderHeight),
+        0, 0, imageWidth, imageHeight,
+        Gdiplus::UnitPixel, &imageAttr);
 
-    HDC memDC = CreateCompatibleDC(hdc);
-    HBITMAP oldBitmap = (HBITMAP)SelectObject(memDC, mFireBallAnimation[mCurrentFrame].GetHBITMAP());
-
-    // PlgBlt로 회전된 이미지 그리기
-    PlgBlt(hdc, rotatedPts, memDC, 0, 0, imageWidth, imageHeight, NULL, 0, 0);
-
-    SelectObject(memDC, oldBitmap);
-    DeleteDC(memDC);
+    graphics.ResetTransform();
 }
 
 void FireBall::UpdateHitbox()

@@ -3,7 +3,6 @@
 #include "Arrow.h"
 #include "Stage1.h"
 
-
 Archer::Archer()
 {
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
@@ -18,11 +17,12 @@ Archer::Archer()
     mCurrentWalkFrame = 0;
     mIsAttack = false;
     mCurrenAttackFrame = 0;
-    mIsdead = false;
+    mIsDead = false;
     mCurrentDeadFrame = 0;
     mIsHit = false;
     mCurrentHitFrame = 0;
-    mIsShot = false;
+
+    mHitTimer = 0.0f;
 
     mAttackFrameTime = 0.0f;
     mAttackCooldown = 0.0f;
@@ -111,6 +111,36 @@ void Archer::Update(Player& p, Stage1* stage)
     rect.right = static_cast<int>(mX + imageWidth / 2.0f) - 54;
     rect.bottom = static_cast<int>(mY + imageHeight / 2.0f) - 33;
 
+    // 죽음 상태 처리
+    if (mIsDead) {
+        static float dieTimer = 0.0f;
+        if (mCurrentDeadFrame < 5) { // 0~4까지 5프레임
+            dieTimer += Time::DeltaTime();
+            if (dieTimer >= 0.1f) {
+                mCurrentDeadFrame++;
+                dieTimer = 0.0f;
+            }
+        }
+        return;
+    }
+
+    // 피격 상태 처리
+    float deltaTime = Time::DeltaTime();
+    static float animationTimer = 0.0f;
+    const float hitFrameDuration = 0.1f;
+    if (mIsHit) {
+        mHitTimer -= deltaTime;
+        if (mHitTimer <= 0.0f) {
+            mIsHit = false;
+        }
+        animationTimer += deltaTime;
+        if (animationTimer >= hitFrameDuration) {
+            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
+            animationTimer = 0.0f;
+        }
+        return;
+    }
+
     float playerX = p.GetPositionX();
     float playerY = p.GetPositionY();
     float distance = static_cast<float>(sqrt(pow(mX - playerX, 2) + pow(mY - playerY, 2)));
@@ -120,72 +150,61 @@ void Archer::Update(Player& p, Stage1* stage)
         mAttackCooldown -= Time::DeltaTime();
     }
 
-    if (mIsdead || mIsHit)
+    if (playerX > mX)
     {
-        mIsMoving = false;
-        mIsAttack = false;
-        mIsShot = false;
-        mCurrentWalkFrame = 0;
+        state = EnemyState::RIGHT;
+    }
+    else if (playerX < mX)
+    {
+        state = EnemyState::LEFT;
+    }
+
+    if (mIsAttack)
+    {
+        mAttackFrameTime += Time::DeltaTime();
+        float frameDuration = 0.5f;
+        if (mAttackFrameTime >= frameDuration)
+        {
+            mCurrenAttackFrame++;
+            if (mCurrenAttackFrame >= 4)
+            {
+                mIsAttack = false;
+                mCurrenAttackFrame = 0;
+                mAttackCooldown = 3.0f;
+                Arrow::FireArrow(p, mX, mY, stage);
+            }
+            mAttackFrameTime = 0.0f;
+        }
     }
     else
     {
-        if (playerX > mX)
+        if (distance <= AttackRange && mAttackCooldown <= 0.0f)
         {
-            state = EnemyState::RIGHT;
+            mIsAttack = true;
+            mIsMoving = false;
+            mCurrenAttackFrame = 0;
+            mAttackFrameTime = 0.0f;
+            mCurrentWalkFrame = 0;
         }
-        else if (playerX < mX)
+        else if (distance <= PlayerDetectRange)
         {
-            state = EnemyState::LEFT;
-        }
-
-        if (mIsAttack)
-        {
-            mAttackFrameTime += Time::DeltaTime();
-            float frameDuration = 0.5f;
-            if (mAttackFrameTime >= frameDuration)
+            if (!mIsMoving)
             {
-                mCurrenAttackFrame++;
-                if (mCurrenAttackFrame >= 4)
-                {
-                    mIsAttack = false;
-                    mCurrenAttackFrame = 0;
-                    mAttackCooldown = 3.0f;
-                    Arrow::FireArrow(p, mX, mY, stage);
-                    mIsShot = true;
-                }
-                mAttackFrameTime = 0.0f;
+                mCurrentWalkFrame = 0;
             }
+            mIsAttack = false;
+            mIsMoving = true;
+            float directionX = (playerX - mX) / distance;
+            float directionY = (playerY - mY) / distance;
+            mX += directionX * speed * Time::DeltaTime();
+            mY += directionY * speed * Time::DeltaTime();
         }
         else
         {
-            if (distance <= AttackRange && mAttackCooldown <= 0.0f)
-            {
-                mIsAttack = true;
-                mIsMoving = false;
-                mCurrenAttackFrame = 0;
-                mAttackFrameTime = 0.0f;
-                mCurrentWalkFrame = 0;
-            }
-            else if (distance <= PlayerDetectRange)
-            {
-                if (!mIsMoving)
-                {
-                    mCurrentWalkFrame = 0;
-                }
-                mIsAttack = false;
-                mIsMoving = true;
-                float directionX = (playerX - mX) / distance;
-                float directionY = (playerY - mY) / distance;
-                mX += directionX * speed * Time::DeltaTime();
-                mY += directionY * speed * Time::DeltaTime();
-            }
-            else
-            {
-                mIsAttack = false;
-                mIsMoving = false;
-                mCurrenAttackFrame = 0;
-                mCurrentWalkFrame = 0;
-            }
+            mIsAttack = false;
+            mIsMoving = false;
+            mCurrenAttackFrame = 0;
+            mCurrentWalkFrame = 0;
         }
     }
 
@@ -203,27 +222,6 @@ void Archer::Update(Player& p, Stage1* stage)
     {
         walkFrameTime = 0.0f;
     }
-
-    static float deadFrameTime = 0.0f;
-    static float hitFrameTime = 0.0f;
-    if (mIsdead)
-    {
-        deadFrameTime += Time::DeltaTime();
-        if (deadFrameTime >= 0.1f)
-        {
-            mCurrentDeadFrame = (mCurrentDeadFrame + 1) % 6;
-            deadFrameTime = 0.0f;
-        }
-    }
-    else if (mIsHit)
-    {
-        hitFrameTime += Time::DeltaTime();
-        if (hitFrameTime >= 0.1f)
-        {
-            mCurrentHitFrame = (mCurrentHitFrame + 1) % 2;
-            hitFrameTime = 0.0f;
-        }
-    }
 }
 
 void Archer::LateUpdate()
@@ -232,11 +230,36 @@ void Archer::LateUpdate()
 
 void Archer::Render(HDC hdc, Player& p)
 {
+    // 디버그 범위 그리기
+    HPEN attackPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+    HPEN detectPen = CreatePen(PS_DOT, 1, RGB(0, 255, 0));
+    HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
+    HPEN oldPen = (HPEN)SelectObject(hdc, attackPen);
+    HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, nullBrush);
+
+    Ellipse(hdc,
+        static_cast<int>(mX - AttackRange),
+        static_cast<int>(mY - AttackRange),
+        static_cast<int>(mX + AttackRange),
+        static_cast<int>(mY + AttackRange));
+
+    SelectObject(hdc, detectPen);
+    Ellipse(hdc,
+        static_cast<int>(mX - PlayerDetectRange),
+        static_cast<int>(mY - PlayerDetectRange),
+        static_cast<int>(mX + PlayerDetectRange),
+        static_cast<int>(mY + PlayerDetectRange));
+
+    SelectObject(hdc, oldPen);
+    SelectObject(hdc, oldBrush);
+    DeleteObject(attackPen);
+    DeleteObject(detectPen);
+
     Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
 
     CImage* currentImage = nullptr;
 
-    if (mIsdead)
+    if (mIsDead)
     {
         currentImage = (state == EnemyState::RIGHT) ? &mRightDieAnimaion[mCurrentDeadFrame] : &mLeftDieAnimaion[mCurrentDeadFrame];
     }
@@ -313,4 +336,26 @@ void Archer::SetPosition(float x, float y)
 {
     mX = x;
     mY = y;
+}
+
+void Archer::TakeDamage(int d)
+{
+    if (mIsDead) return;
+
+    hp -= d;
+    if (hp <= 0) {
+        hp = 0;
+        mIsDead = true;
+        mIsHit = false;
+        mIsAttack = false;
+        mIsMoving = false;
+        mCurrentDeadFrame = 0;
+    }
+    else {
+        mIsHit = true;
+        mHitTimer = 0.2f; // 피격 애니메이션 0.2초
+        mCurrentHitFrame = 0;
+        mIsAttack = false;
+        mIsMoving = false;
+    }
 }

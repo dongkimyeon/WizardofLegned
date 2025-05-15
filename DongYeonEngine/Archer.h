@@ -15,7 +15,7 @@ public:
     void Render(HDC hdc, Player& p);
     void SetPosition(float x, float y) override;
 
-    void TakeDamage(int playerDamage) { hp -= playerDamage; }
+    void TakeDamage(int d);
 
     EnemyState GetState() { return state; }
     float GetPositionX() override { return mX; }
@@ -49,15 +49,17 @@ private:
     int mCurrentWalkFrame;
     bool mIsAttack;
     int mCurrenAttackFrame;
-    bool mIsdead;
+    bool mIsDead;
     int mCurrentDeadFrame;
     bool mIsHit;
     int mCurrentHitFrame;
 
-    bool mIsShot;
+    
 
     float PlayerDetectRange = 300.0f;
     float AttackRange = 250.0f;
+
+    float mHitTimer;
 
     float speed;
     RECT rect;

@@ -7,14 +7,15 @@ class Wizard: public GameObject
 public:
 
 	Wizard();
+	~Wizard();
 	enum EnemyState { LEFT, RIGHT };
 
-	void Update(Player& p);
+	void Update(Player& p, Stage1* stage);
 	void LateUpdate() override;
-	void Render(HDC hdc) override;
+	void Render(HDC hdc, Player& p);
 
 	void SetHp(int playerDamage) { hp -= playerDamage; }
-	float GetDamamge() { return damage; }
+	void TakeDamage(int d);
 
 	void SetPosition(float x, float y) override;
 	EnemyState GetState() { return state; }
@@ -51,15 +52,26 @@ private:
 	int mCurrentWalkFrame;
 	bool mIsAttack;
 	int mCurrenAttackFrame;
-	bool mIsdead;
+	bool mIsDead;
 	int mCurrentDeadFrame;
 	bool mIsHit;
 	int mCurrentHitFrame;
 	
-	float PlayerDetectRange;
+	float PlayerDetectRange = 300.0f;
+	float AttackRange = 250.0f;
+
+
+	float mHitTimer;
 
 	float speed;
 	RECT rect;
+
+
+	float mAttackFrameTime;
+	float mAttackCooldown;
+
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
 	
 
 };

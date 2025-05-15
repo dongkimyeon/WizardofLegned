@@ -37,9 +37,10 @@ void Stage1::Update()
 {
     player.Update();
     archer.Update(player, this);
-    wizard.Update(player);
+    wizard.Update(player, this);
     swordman.Update(player);
 
+    //화살 업데이트
     for (auto it = arrows.begin(); it != arrows.end();)
     {
         if ((*it)->IsActive())
@@ -54,6 +55,7 @@ void Stage1::Update()
         }
     }
 
+    //마법사 구체 업데이트
     for (auto it = fireballs.begin(); it != fireballs.end();)
     {
         if ((*it)->IsActive())
@@ -86,14 +88,30 @@ void Stage1::Update()
         swordmanAttackCooldown = 0.5f;
     }
 
-    RECT EnemyRect = swordman.GetRect();
-    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect))
+    RECT EnemyRect1 = swordman.GetRect();
+    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect1))
     {
         std::cout << "player hit swordman" << std::endl;
         swordman.TakeDamage(player.GetDamage());
         playerSlashAttackCooldown = 0.4;
-      
     }
+
+    RECT EnemyRect2 = wizard.GetRect();
+    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect2))
+    {
+        std::cout << "player hit swordman" << std::endl;
+        wizard.TakeDamage(player.GetDamage());
+        playerSlashAttackCooldown = 0.4;
+    }
+    RECT EnemyRect3 = archer.GetRect();
+    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect3))
+    {
+        std::cout << "player hit swordman" << std::endl;
+        archer.TakeDamage(player.GetDamage());
+        playerSlashAttackCooldown = 0.4;
+    }
+
+
 }
 
 void Stage1::LateUpdate()
@@ -109,7 +127,7 @@ void Stage1::Render(HDC hdc)
     FillRect(hdc, &screenRect, blackBrush); // 화면을 검정색으로 채움
     DeleteObject(blackBrush); // 브러시 삭제
 
-    wizard.Render(hdc);
+    wizard.Render(hdc, player);
     archer.Render(hdc, player);
     swordman.Render(hdc, player);
     player.Render(hdc);
@@ -118,6 +136,11 @@ void Stage1::Render(HDC hdc)
     {
         arrow->Render(hdc);
     }
+    for (FireBall* fireball : fireballs)
+    {
+        fireball->Render(hdc);
+    }
+
 
     WCHAR swordManHpText[100];
     wsprintf(swordManHpText, L"enemy Hp : %d", swordman.GetHp());

@@ -2,10 +2,10 @@
 #include "Stage1.h"
 #include "Time.h"
 #include <cmath>
-#include <algorithm>
+
 
 Arrow::Arrow(float x, float y, float dirX, float dirY)
-    : mX(x), mY(y), mDirectionX(dirX), mDirectionY(dirY), speed(600.0f), mIsActive(true), damage(10)
+    : mX(x), mY(y), mDirectionX(dirX), mDirectionY(dirY), speed(800.0f), mIsActive(true), damage(10)
 {
     mArrowImage.Load(L"resources/Monster/ARCHER/ARCHER_BOW/Attack/ARCHER_BOW_0.png");
     if (mArrowImage.IsNull()) wprintf(L"Failed to load: resources/Monster/ARCHER/ARCHER_BOW/Attack/ARCHER_BOW_0.png\n");
@@ -46,7 +46,7 @@ void Arrow::Render(HDC hdc)
     HPEN oldPen = (HPEN)SelectObject(hdc, hitboxPen);
     HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
 
-    // 다각형 그리기
+    // 히트박스 그리기
     Polygon(hdc, hitboxPoints, 4);
 
     SelectObject(hdc, oldPen);
