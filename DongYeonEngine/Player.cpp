@@ -178,9 +178,6 @@ Player::Player()
         mRightAttackEffectAnimation[i].Load(path);
         if (mRightAttackEffectAnimation[i].IsNull()) wprintf(L"Failed to load: %s\n", path);
     }
-
-    //피격시 애니메이션 
-
 }
 
 void Player::Update()
@@ -201,15 +198,16 @@ void Player::Update()
     float deltaTime = Time::DeltaTime();
     static float animationTimer = 0.0f;
     const float walkFrameDuration = 0.1f;
-    const float dashDuration = 0.4f;
-    const float dashFrameDuration = dashDuration / 8.0f;
+    const float dashDistance = 150.0f; // 대쉬 거리
+    const float dashSpeed = 600.0f;    // 대쉬 속도
     const float attackDuration = 0.6f;
     const float attackFrameDuration = attackDuration / 16.0f;
     const float hitDuration = 0.2f;
     const float hitFrameDuration = hitDuration / 2.0f;
     float currentSpeed = speed;
-    static int clickCounter = 0; // 클릭 카운터 추가
-    static int attackEndFrame = mMouseClickFlag ? 16 : 8; // true면 8-15, false면 0-7
+    static int clickCounter = 0;
+    static int attackEndFrame = mMouseClickFlag ? 16 : 8;
+
     // rect 업데이트
     int imageWidth = mFrontIdleAnimation.GetWidth();
     int imageHeight = mFrontIdleAnimation.GetHeight();
@@ -299,55 +297,68 @@ void Player::Update()
         return;
     }
 
+    // 이동 방향 벡터 계산
+    Vector2 moveDirection(0.0f, 0.0f);
+    if (Input::GetKey(eKeyCode::W)) moveDirection.y -= 1.0f;
+    if (Input::GetKey(eKeyCode::A)) moveDirection.x -= 1.0f;
+    if (Input::GetKey(eKeyCode::S)) moveDirection.y += 1.0f;
+    if (Input::GetKey(eKeyCode::D)) moveDirection.x += 1.0f;
 
     // 대쉬 처리
-    if (!mIsDashing && Input::GetKeyDown(eKeyCode::SPACE)) {
+    static Vector2 dashDirection(0.0f, 0.0f);
+    static float dashProgress = 0.0f; // 대쉬 진행 거리
+    if (!mIsDashing && Input::GetKeyDown(eKeyCode::SPACE) && moveDirection.Length() > 0.0f) {
         mIsDashing = true;
-        mDashTimer = dashDuration;
+        dashDirection = moveDirection.Normalize();
+        dashProgress = 0.0f;
         mCurrentDashFrame = 0;
         animationTimer = 0.0f;
-    }
-    if (mIsDashing) {
-        currentSpeed = 400.0f;
-        mDashTimer -= deltaTime;
-        if (mDashTimer <= 0.0f) mIsDashing = false;
-        animationTimer += deltaTime;
-        if (animationTimer >= dashFrameDuration) {
-            mCurrentDashFrame = (mCurrentDashFrame + 1) % 8;
-            animationTimer = 0.0f;
+
+        // 대쉬 방향에 따라 state 설정
+        if (abs(dashDirection.x) > abs(dashDirection.y)) {
+            state = (dashDirection.x > 0) ? PlayerState::RIGHT : PlayerState::LEFT;
+        }
+        else {
+            state = (dashDirection.y > 0) ? PlayerState::FRONT : PlayerState::BACK;
         }
     }
 
-    // 이동 로직
     if (mIsDashing) {
-        switch (state) {
-        case PlayerState::BACK: mY -= currentSpeed * deltaTime; break;
-        case PlayerState::LEFT: mX -= currentSpeed * deltaTime; break;
-        case PlayerState::FRONT: mY += currentSpeed * deltaTime; break;
-        case PlayerState::RIGHT: mX += currentSpeed * deltaTime; break;
+        float moveDistance = dashSpeed * deltaTime;
+        dashProgress += moveDistance;
+        if (dashProgress >= dashDistance) {
+            moveDistance -= (dashProgress - dashDistance); // 초과분 조정
+            mIsDashing = false;
+            dashProgress = 0.0f;
         }
+        Vector2 move = dashDirection * moveDistance;
+        mX += move.x;
+        mY += move.y;
         isMoving = true;
+
+        // 애니메이션 프레임 설정
+        if (dashProgress < dashDistance * 0.8f) {
+            // 대쉬 중: 00~03 프레임
+            mCurrentDashFrame = static_cast<int>((dashProgress / (dashDistance * 0.8f)) * 4) % 4;
+        }
+        else {
+            // 대쉬 종료 직전: 04~07 프레임
+            mCurrentDashFrame = 4 + static_cast<int>(((dashProgress - dashDistance * 0.8f) / (dashDistance * 0.2f)) * 4) % 4;
+        }
     }
-    else {
-        if (Input::GetKey(eKeyCode::W)) {
-            state = PlayerState::BACK;
-            mY -= currentSpeed * deltaTime;
-            isMoving = true;
+    else if (moveDirection.Length() > 0.0f) {
+        moveDirection = moveDirection.Normalize();
+        Vector2 move = moveDirection * currentSpeed * deltaTime;
+        mX += move.x;
+        mY += move.y;
+        isMoving = true;
+
+        // 일반 이동 시 state 설정
+        if (abs(moveDirection.x) > abs(moveDirection.y)) {
+            state = (moveDirection.x > 0) ? PlayerState::RIGHT : PlayerState::LEFT;
         }
-        if (Input::GetKey(eKeyCode::A)) {
-            state = PlayerState::LEFT;
-            mX -= currentSpeed * deltaTime;
-            isMoving = true;
-        }
-        if (Input::GetKey(eKeyCode::S)) {
-            state = PlayerState::FRONT;
-            mY += currentSpeed * deltaTime;
-            isMoving = true;
-        }
-        if (Input::GetKey(eKeyCode::D)) {
-            state = PlayerState::RIGHT;
-            mX += currentSpeed * deltaTime;
-            isMoving = true;
+        else {
+            state = (moveDirection.y > 0) ? PlayerState::FRONT : PlayerState::BACK;
         }
     }
 
@@ -366,13 +377,13 @@ void Player::Update()
 
     mIsMoving = isMoving;
 }
+
 void Player::LateUpdate()
 {
 }
 
 void Player::Render(HDC hdc)
 {
-
     Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
     // 디버그 히트박스 렌더링
     if (mHasEffectHitbox) {
@@ -449,7 +460,7 @@ void Player::Render(HDC hdc)
     if (mIsAttack && mCurrentAttackFrame >= 4) { // 4프레임부터 이펙트 출력
         CImage* effectImage = nullptr;
         int effectFrame = 0;
-        if (mCurrentAttackFrame < 8) 
+        if (mCurrentAttackFrame < 8)
         {
             // 레프트 이펙트: 4~7프레임 -> 0~3
             effectFrame = (mCurrentAttackFrame - 4) * 6 / 4; // 4프레임을 6프레임으로 확장
@@ -539,13 +550,11 @@ RECT Player::GetRect()
     return rect;
 }
 
-
 bool Player::GetEffectHitbox(POINT outPoints[4])
 {
     for (int i = 0; i < 4; ++i) outPoints[i] = mEffectHitboxPoints[i];
     return mHasEffectHitbox;
 }
-
 
 bool Player::CheckPointInPolygon(POINT& point, POINT polygon[4])
 {
@@ -560,7 +569,6 @@ bool Player::CheckPointInPolygon(POINT& point, POINT polygon[4])
     }
     return (crossings % 2) == 1;
 }
-
 
 bool Player::CheckCollisionWithRect(RECT& otherRect)
 {
@@ -591,5 +599,3 @@ bool Player::CheckCollisionWithRect(RECT& otherRect)
 
     return false;
 }
-
-
