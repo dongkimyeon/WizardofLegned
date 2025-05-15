@@ -2,7 +2,6 @@
 #include "GameObject.h"
 #include "Player.h"
 
-
 class SwordMan : public GameObject
 {
 public:
@@ -24,9 +23,17 @@ public:
     float GetSpeed() override { return speed; }
 
     bool GetEffectHitbox(POINT outPoints[4]);
-    bool CheckCollisionWithRect(RECT& otherRect) ; // 새 메서드
+    bool CheckCollisionWithRect(RECT& otherRect); // 충돌 감지 메서드
 
     RECT GetRect() override { return rect; }
+
+    // 공격 플래그 Getter와 Setter
+    bool HasAttackedPlayer() const { return mHasAttackedPlayer; }
+    void ResetAttackFlag() { mHasAttackedPlayer = false; }
+
+
+    bool HasBeenHit() const { return mHasBeenHit; }
+    void SetHitFlag(bool hit) { mHasBeenHit = hit; }
 
 private:
     float mX;
@@ -57,14 +64,12 @@ private:
     int mCurrentDeadFrame = 0;
     bool mIsHit = false;
     int mCurrentHitFrame = 0;
-    
-    //공격시작 방향
+
+    // 공격 시작 방향
     float mAttackDirectionX;
     float mAttackDirectionY;
-    
 
     float mHitTimer;
-
     float mAttackCooldown = 0;
     float mAttackFrameTime;
     float PlayerDetectRange = 300.0f;
@@ -72,11 +77,16 @@ private:
     float speed = 100.0f;
     RECT rect;
 
-    POINT mEffectHitboxPoints[4]; 
+    POINT mEffectHitboxPoints[4];
     bool mHasEffectHitbox;
 
+    // 공격 이펙트로 플레이어에게 데미지를 입혔는지 여부
+    bool mHasAttackedPlayer = false;
 
     bool CheckPointInPolygon(POINT& point, POINT polygon[4]);
+
+
+    bool mHasBeenHit = false; // 피격 플래그 추가
 
     // GDI+ 관련
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;

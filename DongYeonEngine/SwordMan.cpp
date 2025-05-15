@@ -22,17 +22,19 @@ SwordMan::SwordMan()
     mCurrentHitFrame = 0;
     PlayerDetectRange = 300.0f;
     AttackRange = 80.0f;
-    mAttackCooldown = 0.0f; // 공격 쿨타임 초기화
-    mAttackFrameTime = 0.0f; // 공격 애니메이션 타이머 초기화
-    mAttackDirectionX = 0.0f; // 공격 방향 X 초기화
-    mAttackDirectionY = 0.0f; // 공격 방향 Y 초기화
-    mHasEffectHitbox = false; // 히트박스 비활성화로 초기화
+    mAttackCooldown = 0.0f;
+    mAttackFrameTime = 0.0f;
+    mAttackDirectionX = 0.0f;
+    mAttackDirectionY = 0.0f;
+    mHasEffectHitbox = false;
+    mHasAttackedPlayer = false; // 공격 플래그 초기화
     hp = 100;
     damage = 20;
-    for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 }; // 꼭짓점 초기화
+    for (int i = 0; i < 4; ++i) mEffectHitboxPoints[i] = { 0, 0 };
 
     rect = { (int)(mX - 20), (int)(mY - 20), (int)(mX + 20), (int)(mY + 20) };
 
+    // 이미지 로드 (기존 코드 유지)
     mRightIdleAnimation.Load(L"resources/Monster/SwordMan/SwordManRight/Idle/SWORDMAN_RIGHT_0.png");
     if (mRightIdleAnimation.IsNull()) wprintf(L"Failed to load: resources/Monster/SwordMan/SwordManRight/Idle/SWORDMAN_RIGHT_0.png\n");
     for (int i = 0; i < 3; ++i)
@@ -183,9 +185,21 @@ void SwordMan::Update(Player& p)
                 mIsAttack = false;
                 mCurrenAttackFrame = 0;
                 mAttackCooldown = 3.0f;
-                mHasEffectHitbox = false; // 공격 종료 시 히트박스 비활성화
+                mHasEffectHitbox = false;
+                mHasAttackedPlayer = false; // 공격 종료 시 플래그 리셋
             }
             mAttackFrameTime = 0.0f;
+        }
+
+        // 공격 이펙트가 활성화된 동안 충돌 감지 및 데미지 처리
+        if (mCurrenAttackFrame >= 1 && !mHasAttackedPlayer)
+        {
+            RECT playerRect = p.GetRect();
+            if (CheckCollisionWithRect(playerRect))
+            {
+                p.TakeDamage(damage);
+                mHasAttackedPlayer = true; // 한 번만 데미지 입힘
+            }
         }
     }
     else
@@ -194,9 +208,8 @@ void SwordMan::Update(Player& p)
         {
             mIsAttack = true;
             mIsMoving = false;
-            mCurrenAttackFrame = 0; // 공격 시작 시 프레임 초기화
-            mAttackFrameTime = 0.0f; // 타이머 초기화
-            // 공격 시작 시 방향 벡터 저장
+            mCurrenAttackFrame = 0;
+            mAttackFrameTime = 0.0f;
             if (distance > 0.0f)
             {
                 mAttackDirectionX = (playerX - mX) / distance;
@@ -207,6 +220,7 @@ void SwordMan::Update(Player& p)
                 mAttackDirectionX = (state == EnemyState::RIGHT) ? 1.0f : -1.0f;
                 mAttackDirectionY = 0.0f;
             }
+            mHasAttackedPlayer = false; // 공격 시작 시 플래그 리셋
         }
         else if (distance <= PlayerDetectRange)
         {
@@ -225,29 +239,23 @@ void SwordMan::Update(Player& p)
         }
     }
 
-    // 히트박스 업데이트
+    // 히트박스 업데이트 (기존 코드 유지)
     if (mIsAttack && mCurrenAttackFrame >= 1)
     {
-        // 고정 크기 설정
-        int hitboxWidth = 64; // 고정 너비 (픽셀)
-        int hitboxHeight = 100; // 고정 높이 (픽셀)
-
-        // 이펙트 중심 위치 계산
+        int hitboxWidth = 64;
+        int hitboxHeight = 100;
         float effectOffset = 30.0f;
         float centerX = mX + mAttackDirectionX * effectOffset;
         float centerY = mY + mAttackDirectionY * effectOffset;
-
-        // 회전 각도 계산
         float angle = atan2(mAttackDirectionY, mAttackDirectionX);
 
         POINT basePoints[4] = {
-            { -hitboxWidth / 2, -hitboxHeight / 2 }, // 좌상
-            {  hitboxWidth / 2, -hitboxHeight / 2 }, // 우상
-            {  hitboxWidth / 2,  hitboxHeight / 2 }, // 우하
-            { -hitboxWidth / 2,  hitboxHeight / 2 }  // 좌하
+            { -hitboxWidth / 2, -hitboxHeight / 2 },
+            {  hitboxWidth / 2, -hitboxHeight / 2 },
+            {  hitboxWidth / 2,  hitboxHeight / 2 },
+            { -hitboxWidth / 2,  hitboxHeight / 2 }
         };
 
-        // 회전 변환
         for (int i = 0; i < 4; ++i)
         {
             float x = (float)basePoints[i].x;
@@ -263,7 +271,7 @@ void SwordMan::Update(Player& p)
         mHasEffectHitbox = false;
     }
 
-    // 이동 애니메이션 프레임 업데이트
+    // 이동 애니메이션 프레임 업데이트 (기존 코드 유지)
     if (!mIsDead && !mIsHit && !mIsAttack && mIsMoving)
     {
         static float frameTime = 0.0f;
@@ -282,7 +290,7 @@ void SwordMan::LateUpdate()
 
 void SwordMan::Render(HDC hdc, Player& p)
 {
-    // 디버그 범위 그리기
+    // 디버그 범위 그리기 (기존 코드 유지)
     HPEN attackPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
     HPEN detectPen = CreatePen(PS_DOT, 1, RGB(0, 255, 0));
     HBRUSH nullBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -309,16 +317,13 @@ void SwordMan::Render(HDC hdc, Player& p)
 
     Rectangle(hdc, rect.left, rect.top, rect.right, rect.bottom);
 
-    // 히트박스 디버그 그리기
+    // 히트박스 디버그 그리기 (기존 코드 유지)
     if (mHasEffectHitbox)
     {
         HPEN hitboxPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
         HPEN oldPen = (HPEN)SelectObject(hdc, hitboxPen);
         HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, (HBRUSH)GetStockObject(NULL_BRUSH));
-
-        // 다각형 그리기
         Polygon(hdc, mEffectHitboxPoints, 4);
-
         SelectObject(hdc, oldPen);
         SelectObject(hdc, oldBrush);
         DeleteObject(hitboxPen);
@@ -351,7 +356,6 @@ void SwordMan::Render(HDC hdc, Player& p)
     int drawX = static_cast<int>(mX - imageWidth / 2.0f);
     int drawY = static_cast<int>(mY - imageHeight / 2.0f);
 
-    // 소드맨 이미지는 원래대로 렌더링
     currentImage->Draw(hdc, drawX, drawY, imageWidth, imageHeight);
 
     if (mIsAttack && mCurrenAttackFrame >= 1)
@@ -367,7 +371,7 @@ void SwordMan::Render(HDC hdc, Player& p)
         }
         else
         {
-            effectFrame = 0; // 기본값 (실제로는 이 경우 도달하지 않음)
+            effectFrame = 0;
         }
 
         CImage* effectImage = &mAttackEffectAnimation[effectFrame];
@@ -383,7 +387,6 @@ void SwordMan::Render(HDC hdc, Player& p)
         float directionY = mAttackDirectionY;
         float angle = atan2(directionY, directionX) * 180.0f / 3.1415926535f;
 
-        // 이펙트 위치를 30픽셀 떨어지게 조정
         float effectOffset = 30.0f;
         int effectDrawX = static_cast<int>(mX + directionX * effectOffset - effectWidth / 2.0f);
         int effectDrawY = static_cast<int>(mY + directionY * effectOffset - effectHeight / 2.0f);
@@ -422,7 +425,7 @@ void SwordMan::TakeDamage(int d)
     }
     else {
         mIsHit = true;
-        mHitTimer = 0.2f; // 피격 애니메이션 0.2초
+        mHitTimer = 0.2f;
         mCurrentHitFrame = 0;
         mIsAttack = false;
         mIsMoving = false;
@@ -453,7 +456,6 @@ bool SwordMan::CheckCollisionWithRect(RECT& otherRect)
 {
     if (!mHasEffectHitbox) return false;
 
-    // 플레이어 사각형 꼭짓점
     POINT rectPoints[4] = {
         { otherRect.left, otherRect.top },
         { otherRect.right, otherRect.top },
@@ -461,14 +463,12 @@ bool SwordMan::CheckCollisionWithRect(RECT& otherRect)
         { otherRect.left, otherRect.bottom }
     };
 
-    // 1. 플레이어 꼭짓점이 이펙트 사각형 내부에 있는지
     for (auto& p : rectPoints) {
         if (CheckPointInPolygon(p, mEffectHitboxPoints)) {
             return true;
         }
     }
 
-    // 2. 이펙트 사각형 꼭짓점이 플레이어 사각형 내부에 있는지
     for (auto& p : mEffectHitboxPoints) {
         if (p.x >= otherRect.left && p.x <= otherRect.right &&
             p.y >= otherRect.top && p.y <= otherRect.bottom) {

@@ -8,7 +8,6 @@
 #include "FireBall.h"
 #include <vector>
 
-
 class Stage1 : public Scene {
 public:
     Stage1();
@@ -23,11 +22,10 @@ public:
 
 private:
     Player player;
-    Wizard wizard;
-    SwordMan swordman;
-    Archer archer;
-    std::vector<Arrow*> arrows;
-    std::vector<FireBall*> fireballs;
-    float swordmanAttackCooldown;
-    float playerSlashAttackCooldown;
+    std::vector<Wizard*> wizards;    // ¸¶¹ý»ç °´Ã¼ º¤ÅÍ
+    std::vector<SwordMan*> swordmans;// ¼Òµå¸Ç °´Ã¼ º¤ÅÍ
+    std::vector<Archer*> archers;    // ±Ã¼ö °´Ã¼ º¤ÅÍ
+    std::vector<Arrow*> arrows;      // È­»ì °´Ã¼ º¤ÅÍ
+    std::vector<FireBall*> fireballs;// ÆÄÀÌ¾îº¼ °´Ã¼ º¤ÅÍ
+  
 };

@@ -24,6 +24,10 @@ public:
 	float GetSpeed() override { return speed; }
 	RECT GetRect() override { return rect; }
 
+
+	bool HasBeenHit() const { return mHasBeenHit; }
+	void SetHitFlag(bool hit) { mHasBeenHit = hit; }
+
 private:
 	float mX;
 	float mY;
@@ -69,6 +73,8 @@ private:
 
 	float mAttackFrameTime;
 	float mAttackCooldown;
+
+	bool mHasBeenHit = false; // 피격 플래그 추가
 
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;

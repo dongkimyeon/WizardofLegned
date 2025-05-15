@@ -7,26 +7,28 @@
 Stage1::Stage1()
 {
     player.SetPosition(1000, 500);
-    archer.SetPosition(500, 100);
-    swordman.SetPosition(700, 100);
-    wizard.SetPosition(900, 100);
-    swordmanAttackCooldown = 0.0f;
-    playerSlashAttackCooldown = 0.0f;
+
+    // 초기 적 객체 추가
+    swordmans.push_back(new SwordMan());
+    swordmans.back()->SetPosition(700, 100);
+    swordmans.push_back(new SwordMan());
+    swordmans.back()->SetPosition(800, 200);
+
+    wizards.push_back(new Wizard());
+    wizards.back()->SetPosition(900, 100);
+
+    archers.push_back(new Archer());
+    archers.back()->SetPosition(500, 100);
 }
 
 Stage1::~Stage1()
 {
-    for (Arrow* arrow : arrows)
-    {
-        delete arrow;
-    }
-    arrows.clear();
-
-    for (FireBall* fireball : fireballs)
-    {
-        delete fireball;
-    }
-    fireballs.clear();
+    // 동적 할당된 객체 해제
+    for (auto* swordman : swordmans) delete swordman;
+    for (auto* wizard : wizards) delete wizard;
+    for (auto* archer : archers) delete archer;
+    for (auto* arrow : arrows) delete arrow;
+    for (auto* fireball : fireballs) delete fireball;
 }
 
 void Stage1::Initialize()
@@ -36,11 +38,13 @@ void Stage1::Initialize()
 void Stage1::Update()
 {
     player.Update();
-    archer.Update(player, this);
-    wizard.Update(player, this);
-    swordman.Update(player);
 
-    //화살 업데이트
+    // 모든 적 객체 업데이트
+    for (auto* archer : archers) archer->Update(player, this);
+    for (auto* wizard : wizards) wizard->Update(player, this);
+    for (auto* swordman : swordmans) swordman->Update(player);
+
+    // 화살 업데이트
     for (auto it = arrows.begin(); it != arrows.end();)
     {
         if ((*it)->IsActive())
@@ -55,7 +59,7 @@ void Stage1::Update()
         }
     }
 
-    //마법사 구체 업데이트
+    // 파이어볼 업데이트
     for (auto it = fireballs.begin(); it != fireballs.end();)
     {
         if ((*it)->IsActive())
@@ -70,48 +74,52 @@ void Stage1::Update()
         }
     }
 
-    if (swordmanAttackCooldown > 0.0f)
-    {
-        swordmanAttackCooldown -= Time::DeltaTime();
-    }
-    //플레이어 공격쿨타임
-    if (playerSlashAttackCooldown > 0.0f)
-    {
-        playerSlashAttackCooldown -= Time::DeltaTime();
-    }
+    // 플레이어 공격 처리
+    POINT effectHitboxPoints[4];
+    bool hasEffectHitbox = player.GetEffectHitbox(effectHitboxPoints);
 
-    RECT playerRect = player.GetRect();
-    if (swordmanAttackCooldown <= 0.0f && swordman.CheckCollisionWithRect(playerRect))
+    if (hasEffectHitbox)
     {
-        std::cout << "Swordman hit player" << std::endl;
-        player.TakeDamage(swordman.GetDamage());
-        swordmanAttackCooldown = 0.5f;
-    }
+        // SwordMan 피격 처리
+        for (auto* swordman : swordmans)
+        {
+            RECT enemyRect = swordman->GetRect();
+            if (player.CheckCollisionWithRect(enemyRect) && !swordman->HasBeenHit())
+            {
+                swordman->TakeDamage(player.GetDamage());
+                swordman->SetHitFlag(true); // 피격 플래그 설정
+            }
+        }
 
-    RECT EnemyRect1 = swordman.GetRect();
-    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect1))
+        // Wizard 피격 처리
+        for (auto* wizard : wizards)
+        {
+            RECT enemyRect = wizard->GetRect();
+            if (player.CheckCollisionWithRect(enemyRect) && !wizard->HasBeenHit())
+            {
+                wizard->TakeDamage(player.GetDamage());
+                wizard->SetHitFlag(true); // 피격 플래그 설정
+            }
+        }
+
+        // Archer 피격 처리
+        for (auto* archer : archers)
+        {
+            RECT enemyRect = archer->GetRect();
+            if (player.CheckCollisionWithRect(enemyRect) && !archer->HasBeenHit())
+            {
+                archer->TakeDamage(player.GetDamage());
+                archer->SetHitFlag(true); // 피격 플래그 설정
+            }
+        }
+    }
+    else
     {
-        std::cout << "player hit swordman" << std::endl;
-        swordman.TakeDamage(player.GetDamage());
-        playerSlashAttackCooldown = 0.4;
+        // 공격이 끝났을 때 모든 적의 피격 플래그 리셋
+        for (auto* swordman : swordmans) swordman->SetHitFlag(false);
+        for (auto* wizard : wizards) wizard->SetHitFlag(false);
+        for (auto* archer : archers) archer->SetHitFlag(false);
     }
-
-    RECT EnemyRect2 = wizard.GetRect();
-    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect2))
-    {
-        std::cout << "player hit swordman" << std::endl;
-        wizard.TakeDamage(player.GetDamage());
-        playerSlashAttackCooldown = 0.4;
-    }
-    RECT EnemyRect3 = archer.GetRect();
-    if (playerSlashAttackCooldown <= 0.0f && player.CheckCollisionWithRect(EnemyRect3))
-    {
-        std::cout << "player hit swordman" << std::endl;
-        archer.TakeDamage(player.GetDamage());
-        playerSlashAttackCooldown = 0.4;
-    }
-
-
 }
 
 void Stage1::LateUpdate()
@@ -121,30 +129,55 @@ void Stage1::LateUpdate()
 
 void Stage1::Render(HDC hdc)
 {
-    // 배경을 검정색으로 채우기
-    RECT screenRect = { 0, 0, 1920, 1080 }; // 화면 크기에 맞게 조정 (예: 1920x1080)
-    HBRUSH blackBrush = CreateSolidBrush(RGB(200, 200, 200)); // 검정색 브러시 생성
-    FillRect(hdc, &screenRect, blackBrush); // 화면을 검정색으로 채움
-    DeleteObject(blackBrush); // 브러시 삭제
+    // 격자 배경 그리기
+    int gridSize = 50; // 격자 한 칸의 크기 (픽셀)
+    int screenWidth = 1920; // 화면 너비
+    int screenHeight = 1080; // 화면 높이
 
-    wizard.Render(hdc, player);
-    archer.Render(hdc, player);
-    swordman.Render(hdc, player);
+    // 배경을 단색으로 채우기 (선택 사항)
+    RECT screenRect = { 0, 0, screenWidth, screenHeight };
+    HBRUSH bgBrush = CreateSolidBrush(RGB(200, 200, 200)); // 회색 배경
+    FillRect(hdc, &screenRect, bgBrush);
+    DeleteObject(bgBrush);
+
+    // 격자 선 그리기
+    HPEN gridPen = CreatePen(PS_SOLID, 1, RGB(150, 150, 150)); // 격자 선 색상 (밝은 회색)
+    HPEN oldPen = (HPEN)SelectObject(hdc, gridPen);
+
+    // 세로 선 그리기
+    for (int x = 0; x <= screenWidth; x += gridSize)
+    {
+        MoveToEx(hdc, x, 0, NULL);
+        LineTo(hdc, x, screenHeight);
+    }
+
+    // 가로 선 그리기
+    for (int y = 0; y <= screenHeight; y += gridSize)
+    {
+        MoveToEx(hdc, 0, y, NULL);
+        LineTo(hdc, screenWidth, y);
+    }
+
+    // 펜 객체 복원 및 삭제
+    SelectObject(hdc, oldPen);
+    DeleteObject(gridPen);
+
+    // 모든 적과 플레이어 렌더링
+    for (auto* wizard : wizards) wizard->Render(hdc, player);
+    for (auto* archer : archers) archer->Render(hdc, player);
+    for (auto* swordman : swordmans) swordman->Render(hdc, player);
     player.Render(hdc);
 
-    for (Arrow* arrow : arrows)
-    {
-        arrow->Render(hdc);
-    }
-    for (FireBall* fireball : fireballs)
-    {
-        fireball->Render(hdc);
-    }
+    for (auto* arrow : arrows) arrow->Render(hdc);
+    for (auto* fireball : fireballs) fireball->Render(hdc);
 
-
-    WCHAR swordManHpText[100];
-    wsprintf(swordManHpText, L"enemy Hp : %d", swordman.GetHp());
-    TextOut(hdc, 0, 20, swordManHpText, lstrlen(swordManHpText));
+    // UI 텍스트 출력
+    if (!swordmans.empty())
+    {
+        WCHAR swordManHpText[100];
+        wsprintf(swordManHpText, L"enemy Hp : %d", swordmans[0]->GetHp());
+        TextOut(hdc, 0, 20, swordManHpText, lstrlen(swordManHpText));
+    }
     WCHAR PlayerHpText[100];
     wsprintf(PlayerHpText, L"player Hp : %d", player.GetHp());
     TextOut(hdc, 0, 40, PlayerHpText, lstrlen(PlayerHpText));

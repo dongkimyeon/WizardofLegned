@@ -154,36 +154,6 @@
     <Image Include="small.ico">
       <Filter>리소스 파일</Filter>
     </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_08.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_09.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_00.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_01.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_02.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_03.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_04.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_05.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_06.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="resources\Player\Back\Walk\BACK_COMPLETE_07.png">
-      <Filter>리소스 파일</Filter>
-    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DongYeonEngine.rc">

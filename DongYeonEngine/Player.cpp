@@ -191,6 +191,23 @@ void Player::Update()
                 dieTimer = 0.0f;
             }
         }
+
+        mIsMoving = false;
+        mIsDashing = false;
+        mIsAttack = false;
+        mIsHit = false;
+        mIsDead = false;
+        mCurrentWalkFrame = 0;
+        mCurrentDashFrame = 0;
+        mCurrentAttackFrame = 0;
+        mCurrentHitFrame = 0;
+        mCurrentDieFrame = 0;
+        mDashTimer = 0.0f;
+        mAttackTimer = 0.0f;
+        mHitTimer = 0.0f;
+        mMouseClickFlag = false;
+        mHasEffectHitbox = false;
+        
         return;
     }
 
