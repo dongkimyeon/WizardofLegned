@@ -38,6 +38,14 @@ public:
 		 return rect;
 	 }
 
+	 virtual bool IsCollidingWith(GameObject* other)  
+	 {
+		 RECT rect1 = GetRect();
+		 RECT rect2 = other->GetRect();
+		 return (rect1.left < rect2.right && rect1.right > rect2.left &&
+			 rect1.top < rect2.bottom && rect1.bottom > rect2.top);
+	 }
+
 protected:
 	float mX;
 	float mY;

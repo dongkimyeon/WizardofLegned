@@ -168,6 +168,12 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="DongYeonEngine.ico" />
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_0.png" />
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_1.png" />
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_2.png" />
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_3.png" />
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_4.png" />
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_5.png" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>

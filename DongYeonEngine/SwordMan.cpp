@@ -402,6 +402,8 @@ void SwordMan::Render(HDC hdc, Player& p)
             Gdiplus::UnitPixel, &imageAttr);
 
         graphics.ResetTransform();
+
+
     }
 }
 

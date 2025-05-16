@@ -154,6 +154,24 @@
     <Image Include="small.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_5.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_0.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_1.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_2.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_3.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\Monster\SwordMan\SwordManRight\Walk\SWORDMAN_RIGHT_4.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DongYeonEngine.rc">

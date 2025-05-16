@@ -78,9 +78,9 @@ void Stage1::Update()
     POINT effectHitboxPoints[4];
     bool hasEffectHitbox = player.GetEffectHitbox(effectHitboxPoints);
 
+    //피격 처리
     if (hasEffectHitbox)
     {
-        // SwordMan 피격 처리
         for (auto* swordman : swordmans)
         {
             RECT enemyRect = swordman->GetRect();
@@ -90,8 +90,6 @@ void Stage1::Update()
                 swordman->SetHitFlag(true); // 피격 플래그 설정
             }
         }
-
-        // Wizard 피격 처리
         for (auto* wizard : wizards)
         {
             RECT enemyRect = wizard->GetRect();
@@ -101,8 +99,6 @@ void Stage1::Update()
                 wizard->SetHitFlag(true); // 피격 플래그 설정
             }
         }
-
-        // Archer 피격 처리
         for (auto* archer : archers)
         {
             RECT enemyRect = archer->GetRect();
@@ -120,6 +116,10 @@ void Stage1::Update()
         for (auto* wizard : wizards) wizard->SetHitFlag(false);
         for (auto* archer : archers) archer->SetHitFlag(false);
     }
+
+	// 각 객체들끼리 겹치지않게 처리
+    HandleCollision();
+
 }
 
 void Stage1::LateUpdate()
@@ -185,4 +185,71 @@ void Stage1::Render(HDC hdc)
     WCHAR Text[100];
     wsprintf(Text, L"X : %d Y : %d", static_cast<int>(Input::GetMousePosition().x), static_cast<int>(Input::GetMousePosition().y));
     TextOut(hdc, static_cast<int>(Input::GetMousePosition().x) + 10, static_cast<int>(Input::GetMousePosition().y), Text, lstrlen(Text));
+}
+
+void Stage1::HandleCollision()
+{
+    // 모든 객체를 하나의 벡터에 모음
+    std::vector<GameObject*> allObjects;
+    allObjects.push_back(&player); // 플레이어 추가
+    for (auto* swordman : swordmans) allObjects.push_back(swordman);
+    for (auto* wizard : wizards) allObjects.push_back(wizard);
+    for (auto* archer : archers) allObjects.push_back(archer);
+
+    // 모든 객체 쌍에 대해 충돌 확인
+    for (size_t i = 0; i < allObjects.size(); ++i)
+    {
+        for (size_t j = i + 1; j < allObjects.size(); ++j)
+        {
+            if (allObjects[i]->IsCollidingWith(allObjects[j]))
+            {
+                ResolveCollision(*allObjects[i], *allObjects[j]);
+            }
+        }
+    }
+	
+}
+
+void Stage1::ResolveCollision(GameObject& obj1, GameObject& obj2)
+{
+
+    RECT rect1 = obj1.GetRect();
+    RECT rect2 = obj2.GetRect();
+    RECT intersect;
+
+    // 충돌 확인
+    if (IntersectRect(&intersect, &rect1, &rect2))
+    {
+        int overlapX = min(rect1.right, rect2.right) - max(rect1.left, rect2.left);
+        int overlapY = min(rect1.bottom, rect2.bottom) - max(rect1.top, rect2.top);
+
+        if (overlapX < overlapY)
+        {
+            // x축 밀어내기
+            if (rect1.left < rect2.left)
+            {
+                obj1.SetPosition(obj1.GetPositionX() - overlapX, obj1.GetPositionY());
+                obj2.SetPosition(obj2.GetPositionX() + overlapX, obj2.GetPositionY());
+            }
+            else
+            {
+                obj1.SetPosition(obj1.GetPositionX() + overlapX, obj1.GetPositionY());
+                obj2.SetPosition(obj2.GetPositionX() - overlapX, obj2.GetPositionY());
+            }
+        }
+        else
+        {
+            // y축 밀어내기
+            if (rect1.top < rect2.top)
+            {
+                obj1.SetPosition(obj1.GetPositionX(), obj1.GetPositionY() - overlapY);
+                obj2.SetPosition(obj2.GetPositionX(), obj2.GetPositionY() + overlapY);
+            }
+            else
+            {
+                obj1.SetPosition(obj1.GetPositionX(), obj1.GetPositionY() + overlapY);
+                obj2.SetPosition(obj2.GetPositionX(), obj2.GetPositionY() - overlapY);
+            }
+        }
+    }
 }
